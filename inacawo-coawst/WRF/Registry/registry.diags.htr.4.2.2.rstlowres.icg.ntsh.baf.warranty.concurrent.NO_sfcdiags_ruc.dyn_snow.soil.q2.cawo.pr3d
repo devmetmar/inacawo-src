@@ -1,0 +1,758 @@
+#	Registry file specifically for some additional diagnostic output from WRF.  
+
+#	PRESSURE  
+
+#  The new dimspec.  We need to have the number of pressure levels to interpolate to.
+
+dimspec    np      2     namelist=num_press_levels         z     num_press_levels
+
+#  Namelist parameters
+
+rconfig   integer     p_lev_diags         namelist,diags   1              0   -    "flag to process vertical interp diagnostics: 0=nope, 1=yep"             "flag"
+rconfig   integer     p_lev_diags_dfi     namelist,diags   1              0   -    "when doing p_level diags and dfi, turn off diags during 'non forecast'" "flag"
+rconfig   integer     num_press_levels    namelist,diags   1              0   -    "number of pressure levels to interpolate diagnostics to"                "index"
+rconfig   real            press_levels    namelist,diags   max_plevs      0   -    "array of pressure levels to interpolate diagnostics to"                 "Pa"
+rconfig   integer     use_tot_or_hyd_p    namelist,diags   1              2   -    "1=use total pressure, 2=use hydrostatic pressure"                       "flag"
+rconfig   integer     extrap_below_grnd   namelist,diags   1              1   -    "1=no extrapolation, 2=extrapolate adiabatically"                        "flag"
+rconfig   real        p_lev_missing       namelist,diags   1           -999   -    "missing values below ground, no extrapolation"                          "constant"
+rconfig   real        p_lev_intervl8      namelist,diags   max_domains  900   -    "interval to compute/output p level diags if using HTR"                  "s"
+rconfig   real        ts_interval_sec     namelist,diags   max_domains 3600   -    "interval to compute/output WRF time series"                             "s"
+rconfig   integer     kfeta_shal_only     namelist,diags   max_domains    0   -    "When using KFETA, run for shallow cu only?   0=nope, 1=yep"             "flag"
+rconfig   real        kfeta_shal_dlim     namelist,diags   max_domains 4000.0  -     "When using KFETA shallow only, depth limit on shallow clds above LCL"   "meters"
+rconfig   integer     grell_shal_only     namelist,diags   max_domains    0   -    "When using any Grell-scheme run for shallow cu only?   0=nope, 1=yep"   "flag"
+rconfig   integer     ntied_shal_only     namelist,diags   max_domains    0   -    "When running NTIEDTKE, run for shallow cu only?   0=nope, 1=yep"        "flag"
+rconfig   logical     run_kf2             namelist,diags   max_domains .false.  -    "When using KFETA, run with KF2 cld lifetime=modelDT? .true./.false."    "flag"
+rconfig   real        shal_fdbfrc2g       namelist,diags   max_domains    1   -    "When running shall_only, precipitation FDBK fraction to grid: 0.0-1.0"  "fraction"
+
+#  Derived, this is interval in seconds that is from auxhist23 interval, computed in check_a_mundo
+
+rconfig   real        p_lev_interval      derived          max_domains  0   -    "interval to compute/output p level diags"                   "s"
+
+#  Arrays that will be filled with interpolated values
+
+state    real   p_pl    {np}    misc    1  Z   h{23}  "P_PL"    "Pressure level data, Pressure"              "Pa"
+state    real   u_pl   i{np}j   misc    1  Z   h{23}  "U_PL"    "Pressure level data, U wind"                "m s-1"
+state    real   v_pl   i{np}j   misc    1  Z   h{23}  "V_PL"    "Pressure level data, V wind"                "m s-1"
+state    real   t_pl   i{np}j   misc    1  Z   h{23}  "T_PL"    "Pressure level data, Temperature"           "K"
+state    real   rh_pl  i{np}j   misc    1  Z   h{23}  "RH_PL"   "Pressure level data, Relative humidity"     "%"
+state    real   ght_pl i{np}j   misc    1  Z   h{23}  "GHT_PL"  "Pressure level data, Geopotential Height"   "m"
+state    real   s_pl   i{np}j   misc    1  Z   h{23}  "S_PL"    "Pressure level data, Speed"                 "m s-1"
+state    real   td_pl  i{np}j   misc    1  Z   h{23}  "TD_PL"   "Pressure level data, Dew point temperature" "K"
+state    real   q_pl   i{np}j   misc    1  Z   h{23}  "Q_PL"    "Pressure level data, Mixing ratio"          "kg/kg"
+#
+state    real   wdir_pl   i{np}j   misc    1  Z   h{23}  "WDIR_PL"    "Pressure level data, Wind-dir: clockwise-from-north"  "Degrees"
+state    real   thta_pl   i{np}j   misc    1  Z   h{23}  "THTA_PL"    "Pressure level data, Potential Temperature"           "K"
+state    real   wwnd_pl   i{np}j   misc    1  Z   h{23}  "WWND_PL"    "Pressure level data, Ave. Vertical W wind"            "CM/S"
+state    real   tcon_pl   i{np}j   misc    1  Z   h{23}  "TCON_PL"    "Pressure level data, Total Cld+Hydrometeor Mix Ratio" "kg/kg"
+state    real   cconfr_pl i{np}j   misc    1  Z   h{23}  "CCONFR_PL"  "Pressure level data, Cld-Cond Frc of Tot Condensate"  "%"
+state    real   rnwtfr_pl i{np}j   misc    1  Z   h{23}  "RNWTFR_PL"  "Pressure level data, Rain-Wat Frc of Tot Condensate"  "%"
+state    real   snowfr_pl i{np}j   misc    1  Z   h{23}  "SNOWFR_PL"  "Pressure level data, Snow Frc of Tot Condensate"      "%"
+state    real   graufr_pl i{np}j   misc    1  Z   h{23}  "GRAUFR_PL"  "Pressure level data, Graupel Frc of Tot Condensate"   "%"
+state    real   avor_pl   i{np}j   misc    1  Z   h{23}  "AVOR_PL"    "Pressure level data, Absolute vorticity"              "1/S"
+state    real   pvor_pl   i{np}j   misc    1  Z   h{23}  "PVOR_PL"    "Pressure level data, Pot. vorticty 1E-6*m2s-1*K*kg-1" "PVU"
+#
+state    real   twet1      ij   misc    1  -   h{8}   "TWET1"       "Layer-1 wet-bulb air temperature"                    "K"
+#
+state    real   twmean     ij   misc    1  -   h{8}   "TWMEAN"      "Integrated near-surface wet-bulb air temperature"    "K"
+state    real   maskfrac   ij   misc    1  -   h{8}   "MASKFRAC"    "Precip frac: freezing <= 0 < mixed < 1 <= liquid"    "none"
+state    real   qclay1     ij   misc    1  -   h{8}   "QCLAY1"      "layer-1 cld. liq. wat. mixing ratio at each cell"    "g-liqwat/g-dryair"
+state    real   qilay1     ij   misc    1  -   h{8}   "QILAY1"      "layer-1 cloud ice mixing ratio at each cell"         "g-ice/g-dryair"
+state    real   qrlay1     ij   misc    1  -   h{8}   "QRLAY1"      "layer-1 rain mixing ratio at each cell"              "g-rain/g-dryair"
+state    real   qslay1     ij   misc    1  -   h{8}   "QSLAY1"      "layer-1 snow mixing ratio at each cell"              "g-snow/g-dryair"
+state    real   qglay1     ij   misc    1  -   h{8}   "QGLAY1"      "layer-1 graupel mixing ratio at each cell"           "g-grp/g-dryair"
+state    real   qnilay1    ij   misc    1  -   h{8}   "QNILAY1"     "layer-1 snow+graupel mixing ratio at each cell"      "g-snow+grp/g-dryair"   
+state    real   rain       ij   misc    1  - rh0{8}   "RAIN"        "accumulated total (conv + non-conv) rain"            "mm"
+state    real   qv_col     ij   misc    1  -   h{8}   "QVCOLUMN"    "Column-integrated water vapor"                       "mm"
+#
+state    real   raliqd     ij   misc    1  -   h{8}   "PCPLIQD"     "htr_tstep total (conv + non-conv) liquid rain"       "mm"
+state    real   rafzra     ij   misc    1  -   h{8}   "PCPFZRA"     "htr_tstep total (conv + non-conv) freezing rain"     "mm"
+state    real   rasnow     ij   misc    1  -   h{8}   "PCPSNOW"     "htr_tstep total (conv + non-conv) snow"              "mm"
+state    real   raicep     ij   misc    1  -   h{8}   "PCPICEP"     "htr_tstep total (conv + non-conv) ice pellets"       "mm"   
+state    real   raliqdcum  ij   misc    1  - rh0{8}   "PCPLIQD_CUM" "accumulated total (conv + non-conv) liquid rain"     "mm"
+state    real   rafzracum  ij   misc    1  - rh0{8}   "PCPFZRA_CUM" "accumulated total (conv + non-conv) freezing rain"   "mm"
+state    real   rasnowcum  ij   misc    1  - rh0{8}   "PCPSNOW_CUM" "accumulated total (conv + non-conv) snow"            "mm"
+state    real   dysnowcum  ij   misc    1  - rh0{8}   "DYNSNOW_CUM" "dynamic accum total (conv + non-conv) snow depth"    "mm"
+state    real   dysnratcu  ij   misc    1  - rh0{8}   "DYSNRAT_CUM" "dynamic accum total (cv+nc) ratio dyn dpth to SWE"   "ratio"
+state    real   raicepcum  ij   misc    1  - rh0{8}   "PCPICEP_CUM" "accumulated total (conv + non-conv) ice pellets"     "mm"   
+state    real   rain_rate  ij   misc    1  -  h0{8}   "RAIN_RATE"   "rate of total (conv+non-conv) accumltng ppt at sfc"  "mm/s"
+state    real   radcv_rate ij   misc    1  -   h{8}   "RAINDC_RATE" "rate of tot deep cnv (CPschem) accumltng ppt at sfc" "mm/s"
+#
+state    real   prate_inst ij   misc    1  -  h0{8}   "PRATE_INST"  "instantaneous rate of tot conv+non-conv accumltng ppt at sfc"  "mm/s"
+state    real   rascv_rate ij   misc    1  -   h{8}   "RAINSC_RATE" "rate of tot shal cnv (CPschem) accumltng ppt at sfc" "mm/s"
+state    real   rannc_rate ij   misc    1  -   h{8}   "RAINNC_RATE" "rate of total non-convective accumltng ppt at sfc"   "mm/s"
+state    real   sn_nc_rate ij   misc    1  -   h{8}   "SNNC_RATE"   "rate of non-conv accumltng snow/cld-ice at surface"  "mm/s"
+state    real   gr_nc_rate ij   misc    1  -   h{8}   "GRNC_RATE"   "rate of non-conv accumltng graupel (sleet/sn-pllts)" "mm/s"
+state    real   lq_nc_rate ij   misc    1  -   h{8}   "LQNC_RATE"   "rate of nonconv accumltng liq ppt (true rain) @ sfc" "mm/s"
+state    real   sn_cv_rate ij   misc    1  -   h{8}   "SNCV_RATE"   "rate of convctv accumltng snow/cld-ice at surface"   "mm/s"
+state    real   gr_cv_rate ij   misc    1  -   h{8}   "GRCV_RATE"   "rate of convctv accumltng graupel (sleet/sn-pllts)"  "mm/s"
+state    real   lq_cv_rate ij   misc    1  -   h{8}   "LQCV_RATE"   "rate of convctv accumltng liq ppt (true rain) @ sfc" "mm/s"
+state    real   cnvresmask ij   misc    1  -   h{8}   "CVRESMASK"   "resolved scale convective cloud mask (0/1)"          "none"
+#
+state    real   talay1     ij   misc    1  -   h{8}   "TALAY1"      "layer-1 half-sigma air temperature"                  "K"
+state    real   tnsfc      ij   misc    1  -   h{8}   "TNSFC"       "mean near-sfc half-sigma air temperature"            "K"
+state    real   ta2        ij   misc    1  -   h{8}   "TA2"         "2 meter air temperature"                             "K"
+state    real   apta2      ij   misc    1  -   h{8}   "APTEMP"      "Apparent temp (wind chill or heat index) at 2meters" "F"
+state    real   tdew2      ij   misc    1  -   h{8}   "TDEW2"       "2-Meter Dew Point"                                   "K"
+state    real   rh2        ij   misc    1  -   h{8}   "RH2"         "2 meter relative humidity"                           "%"
+state    real   tw2        ij   misc    1  -   h{8}   "TW2"         "2-Meter wet-bulb air temperature"                    "K"
+state    real   twbgt2     ij   misc    1  -   h{8}   "TWBGT2"      "2-Meter wet-bulb globe temperature"                  "K"
+state    real   tdsig1     ij   misc    1  -   h{8}   "TDSIG1"      "Layer-1 Dew Point"                                   "K"
+state    real   ux10       ij   misc    1  -   h{8}   "UX10"        "10 meter U wind component"                           "M/S"
+#
+state    real   vx10       ij   misc    1  -   h{8}   "VX10"        "10 meter V wind component"                           "M/S"
+state    real   wspd10     ij   misc    1  -   h{8}   "WSPD10"      "Scalar wind speed 10-meters above ground"            "M/S"
+state    real   gspd10     ij   misc    1  -   h{8}   "GSPD10"      "Estimated max gust speed 10-meters above ground"     "M/S"
+state    real   slprs      ij   misc    1  -   h{8}   "SLPRS"       "WRF Mean-sea-level pressure"                         "mb"
+state    real   cfraclo    ij   misc    1  -   h{8}   "CFRACL"      "WRF low-cloud fractional coverage"                   "none"
+state    real   cfracmd    ij   misc    1  -   h{8}   "CFRACM"      "WRF medium-cloud fractional coverage"                "none"
+state    real   cfrachi    ij   misc    1  -   h{8}   "CFRACH"      "WRF high-cloud fractional coverage"                  "none"
+state    real   z1000      ij   misc    1  -   h{8}   "Z1000"       "Elevation above mean sea level at 1000 mb"           "M"
+state    real   snolev     ij   misc    1  -   h{8}   "SNOLEV"      "Elevation above mean sea level of snow level"        "M"
+state    real   mixlev     ij   misc    1  -   h{8}   "MIXLEV"      "Elevation above mean sea level at mixed level"       "M"
+#
+state    real   frzlev     ij   misc    1  -   h{8}   "FRZLEV"      "Elevation above mean sea level at freezing level"    "M"
+state    real   z850       ij   misc    1  -   h{8}   "Z850"        "Elevation above mean sea level at 850 mb"            "M"
+state    real   z700       ij   misc    1  -   h{8}   "Z700"        "Elevation above mean sea level at 700 mb"            "M"
+state    real   z500       ij   misc    1  -   h{8}   "Z500"        "Elevation above mean sea level at 500 mb"            "M"
+state    real   z300       ij   misc    1  -   h{8}   "Z300"        "Elevation above mean sea level at 300 mb"            "M"
+state    real   z250       ij   misc    1  -   h{8}   "Z250"        "Elevation above mean sea level at 250 mb"            "M"
+state    real   uwind850   ij   misc    1  -   h{8}   "UWIND850"    "horizontal U wind component at 850 mb"               "M/S"
+state    real   vwind850   ij   misc    1  -   h{8}   "VWIND850"    "horizontal V wind component at 850 mb"               "M/S"
+state    real   avor850    ij   misc    1  -   h{8}   "AVOR850"     "Absolute vorticity, at 850 mb"                       "1/S"
+state    real   rh850      ij   misc    1  -   h{8}   "RH850"       "relative humidity, water-only formula, at 850 m"     "%"
+#
+state    real   ta850      ij   misc    1  -   h{8}   "TA850"       "Temperature, at 850 mb"                              "K"
+state    real   uwind700   ij   misc    1  -   h{8}   "UWIND700"    "horizontal U wind component at 700 mb"               "M/S"
+state    real   vwind700   ij   misc    1  -   h{8}   "VWIND700"    "horizontal V wind component at 700 mb"               "M/S"
+state    real   wwind700   ij   misc    1  -   h{8}   "WWIND700"    "Average Vertical W wind component at 700 mb"         "CM/S"
+state    real   wdir_700   ij   misc    1  -   h{8}   "WDIR700"     "Wind-direction at 700mb clockwise-from-north"        "Degrees" 
+state    real   avor700    ij   misc    1  -   h{8}   "AVOR700"     "Absolute vorticity, at 700 mb"                       "1/S"
+state    real   rh700      ij   misc    1  -   h{8}   "RH700"       "relative humidity, water-only formula at 700 mb"     "%"
+state    real   ta700      ij   misc    1  -   h{8}   "TA700"       "Temperature, at 700 mb"                              "K"
+state    real   thtae700   ij   misc    1  -   h{8}   "THTE700"     "Equivalent potential temperature at 700mb"           "K"
+state    real   uwind500   ij   misc    1  -   h{8}   "UWIND500"    "horizontal U wind component at 500 mb"               "M/S"
+#
+state    real   vwind500   ij   misc    1  -   h{8}   "VWIND500"    "horizontal V wind component at 500 mb"               "M/S"
+state    real   avor500    ij   misc    1  -   h{8}   "AVOR500"     "Absolute vorticity, at 500 mb"                       "1/S"
+state    real   rh500      ij   misc    1  -   h{8}   "RH500"       "relative humidity, water-only formula, at 500 mb"    "%"
+state    real   ta500      ij   misc    1  -   h{8}   "TA500"       "Temperature, at 500 mb"                              "K"
+state    real   uwind300   ij   misc    1  -   h{8}   "UWIND300"    "horizontal U wind component at 300 mb"               "M/S"
+state    real   vwind300   ij   misc    1  -   h{8}   "VWIND300"    "horizontal V wind component at 300 mb"               "M/S"
+state    real   rh300      ij   misc    1  -   h{8}   "RH300"       "relative humidity, water-only formula, at 300 mb"    "%"
+state    real   ta300      ij   misc    1  -   h{8}   "TA300"       "Temperature, at 300 mb"                              "K"
+state    real   wdir_300   ij   misc    1  -   h{8}   "WDIR300"     "Wind-direction at 300mb clockwise-from-north"        "Degrees" 
+state    real   wspd300    ij   misc    1  -   h{8}   "WSPD300"     "Scalar wind speed at 300mb"                          "M/S"
+#
+state    real   uwind250   ij   misc    1  -   h{8}   "UWIND250"    "horizontal U wind component at 250 mb"               "M/S"
+state    real   vwind250   ij   misc    1  -   h{8}   "VWIND250"    "horizontal V wind component at 250 mb"               "M/S"
+state    real   wspd250    ij   misc    1  -   h{8}   "WSPD250"     "Scalar wind speed at 250mb"                          "M/S"   
+state    real   wdir_250   ij   misc    1  -   h{8}   "WDIR250"     "Wind-direction at 250mb clockwise-from-north"        "Degrees" 
+state    real   avor250    ij   misc    1  -   h{8}   "AVOR250"     "Absolute vorticity, at 250 mb"                       "1/S"
+state    real   rh250      ij   misc    1  -   h{8}   "RH250"       "relative humidity, water-only formula, at 250 mb"    "%"
+state    real   ta250      ij   misc    1  -   h{8}   "TA250"       "Temperature, at 250 mb"                              "K"
+state    real   dz1000_850 ij   misc    1  -   h{8}   "DZ1000_850"  "Thickness between 1000mb and 850mb surfaces"         "M"
+state    real   dz1000_500 ij   misc    1  -   h{8}   "DZ1000_500"  "Thickness between 1000mb and 500mb surfaces"         "M"
+state    real   dz850_700  ij   misc    1  -   h{8}   "DZ850_700"   "Thickness between  850mb and 700mb surfaces"         "M"
+#
+state    real   snodpt     ij   misc    1  -   h{8}   "SNODPT"      "Physical snow depth"                                 "mm"
+state    real   rfl_1kmagl ij   misc    1  -   h{8}   "REFL_1KMAGL" "Generic composite radar reflectivity 1km AGL"        "dbZ"
+state    real   rfl_maxagl ij   misc    1  -  h0{8}   "REFL_MAXAGL" "Generic Max radar reflectivity from all layers"      "dbZ"
+state    real   rfl_mxcagl ij   misc    1  -  h0{8}   "REFL_MXCAGL" "Generic Max radar reflectivity cropping upr layers"  "dbZ"
+state    real   rflmpsc1km ij   misc    1  -   h{8}   "RFLMPSC_1KM" "MP-SCHEME calculated radar reflectivity 1km AGL"     "dbZ"
+state    real   rflmpscmax ij   misc    1  -   h{8}   "RFLMPSC_MAX" "MP-SCHEME calculated max radar reflectvty all layrs" "dbZ"
+state    real   etp_18dbz  ij   misc    1  -  h0{8}   "ETOP_18DBZ"  "Generic Max Height abov MSL of 18dbZ reflectivity"   "Feet"
+state    real   etp_mpsc   ij   misc    1  -   h{8}   "ETOP_MPSC"   "MP-SCHEME Max ht. above MSL of 18dbZ reflectivity"   "Feet"
+state    real   vilh       ij   misc    1  -   h{8}   "MPSCVIL"     "MP-SCHEME vertically integrted liq water"            "kg m-2"
+state    real   radarvilh  ij   misc    1  -   h{8}   "MPSCRADARVIL" "MP-SCHEME vertically integrted liq water from Ze"   "kg m-2"
+#
+state    real   icflrateprhr ij misc    1  -   h{8}   "IC_FLSHRT_PHR" "In-cloud flash-rate per hour"                      "Flshs/hr"
+state    real   cgflrateprhr ij misc    1  -   h{8}   "CG_FLSHRT_PHR" "Cloud-to-ground flash-rate per hour"               "Flshs/hr"
+state    real   totflrteprhr ij misc    1  -   h{8}   "TOTFLSHRT_PHR" "Total lightning flash rate per hour"               "Flshs/hr"
+state    real   cfractot   ij   misc    1  -   h{8}   "CFRACTOT"    "MAX of WRF high;med;low-cld fractional coverage"     "none"
+state    real   mucape     ij   misc    1  -   h{8}   "MUCAPE"      "CAPE wrt parcel w/ max theta-e in lowest 3 km AGL"   "J/KG"
+state    real   cinh       ij   misc    1  -   h{8}   "CINH"        "Conv inhib wrt parcel w/ max thetae in lowest 3 km"  "J/KG" 
+state    real   mlcape     ij   misc    1  -   h{8}   "MLCAPE"      "CAPE wrt lowest-100mb averaqe parcel"                "J/KG"
+state    real   cinm       ij   misc    1  -   h{8}   "CINM"        "Conv inhib wrt lowest-100mb averaqe parcel"          "J/KG" 
+state    real   sbcape     ij   misc    1  -   h{8}   "SBCAPE"      "CAPE wrt parcel lifted from lowest model layer"      "J/KG"
+state    real   cins       ij   misc    1  -   h{8}   "CINS"        "Conv inhib wrt lowest model layer parcel"            "J/KG" 
+#
+state    real   srh0_1km   ij   misc    1  -   h{8}   "SRHSFC_1KM"  "Sfc-1 km Storm-Rel Helicity 75%:30R"                 "J/KG"
+state    real   srh0_3km   ij   misc    1  -   h{8}   "SRHSFC_3KM"  "Sfc-3 km Storm-Rel Helicity 75%:30R"                 "J/KG"
+state    real   ehi_1km    ij   misc    1  -   h{8}   "EHI_1KM"     "Energy-helicity index based on lowest 1KM Helicity"  "None"
+state    real   ehi_3km    ij   misc    1  -   h{8}   "EHI_3KM"     "Energy-helicity index based on lowest 3KM Helicity"  "None"
+state    real   visib      ij   misc    1  -   h{8}   "VISIBILITY"  "Horiz Vis based on tot h2o burden in lowst mdl lay"  "KM"
+state    real   ceiling    ij   misc    1  -   h{8}   "CEILING"     "Cloud ceiling based on vertical light extinction"    "M"
+state    real   flghtreg   ij   misc    1  -   h{8}   "FLIGHTREG"   "Flight reg category: VFR:1; MVFR:2; IFR:3; LIFR:4"   "None"
+state    real   fogflag    ij   misc    1  -   h{8}   "FOGFLAG"     "Surfce-layer Fog: 0-None;1-Light;2-Moderate;3-Heavy" "None"
+state    real   ptyp_fip   ij   misc    1  -  h0{8}   "PTYPE_FIP"   "0:NONE;1:LQRAIN;2:SNOW;3:PELT;4:FZRA;5:DZZL;6:FZDZ"  "None"
+state    real   ptyp_cat   ij   misc    1  -   h{8}   "PTYPE_CAT"   "0:NONE;1:RAIN;2:FRZR;3:ICEP;4:SNOW;5:MIXED"          "None"
+#
+state    real   cat_rain   ij   misc    1  -  h0{8}   "CRAIN"       "0:NO;1:YES for liquid rain"                          "None"
+state    real   cat_fzrn   ij   misc    1  -  h0{8}   "CFRZR"       "0:NO;1:YES for freezing rain"                        "None"
+state    real   cat_icep   ij   misc    1  -  h0{8}   "CICEP"       "0:NO;1:YES for ice-pellets/sleet"                    "None"
+state    real   cat_snow   ij   misc    1  -  h0{8}   "CSNOW"       "0:NO;1:YES for snow"                                 "None"
+state    real   cu_activ   ij   misc    1  -  rh{8}   "CPSCHM_ACTV" "Is a CP scheme cloud active w/in prev. outpt tstep"  "None"
+state    real   cu_top_m   ij   misc    1  -  rh{8}   "CPSCHM_CTOP" "Top of parameterized cumulus cloud, if any"          "M"
+state    real   cu_bot_m   ij   misc    1  -   h{8}   "CPSCHM_CBOT" "Base of parameterized cumulus cloud, if any"         "M"
+state    real   cu_top_ta  ij   misc    1  -  rh{8}   "CPSCHM_CTTA" "Temperature at top of parmeterzed cum cloud, if any" "K"
+## BAF
+state    real   icgpot45   ij   misc    1  -   h{8}   "ICGPOTFL450" "Aircraft Icing Potential at Flight-level 45000ft"    "None"
+state    real   sldpot45   ij   misc    1  -   h{8}   "SLDPOTFL450" "Supercooled Large Droplet Potential at FL 45000ft"   "None"
+state    real   icgpot40   ij   misc    1  -   h{8}   "ICGPOTFL400" "Aircraft Icing Potential at Flight-level 40000ft"    "None"
+state    real   sldpot40   ij   misc    1  -   h{8}   "SLDPOTFL400" "Supercooled Large Droplet Potential at FL 40000ft"   "None"
+state    real   uphelmax   ij   misc    1  -   h{8}   "UP_HELI_MAX" "MAX UPDRAFT HELICITY"                                "m2 s-2"
+state    real   wspd10mx   ij   misc    1  -   h{8}   "WSPD10MAX"   "WIND SPD MAX 10 M"                                   "m s-1"
+state    real   afw_hail   ij   misc    1  -   h{8}   "AFWA_HAIL"   "AFWA Diagnostic: Hail Diameter (Weibull)"            "mm"
+state    real   afw_torn   ij   misc    1  -   h{8}   "AFWA_TORNADO" "AFWA Diagnostic: Tornado wind speed (Weibull)"      "m s-1"
+##
+## CAWO
+##
+# (1) Air Temperature
+state    real   ta050      ij   misc    1  -   h{8}   "TA050"       "Temperature, at 50 mb"                               "K"
+state    real   ta100      ij   misc    1  -   h{8}   "TA100"       "Temperature, at 100 mb"                              "K"
+state    real   ta150      ij   misc    1  -   h{8}   "TA150"       "Temperature, at 150 mb"                              "K"
+state    real   ta200      ij   misc    1  -   h{8}   "TA200"       "Temperature, at 200 mb"                              "K"
+##state    real   ta250      ij   misc    1  -   h{8}   "TA250"       "Temperature, at 250 mb"                              "K"
+##state    real   ta300      ij   misc    1  -   h{8}   "TA300"       "Temperature, at 300 mb"                              "K"
+state    real   ta350      ij   misc    1  -   h{8}   "TA350"       "Temperature, at 350 mb"                              "K"
+state    real   ta400      ij   misc    1  -   h{8}   "TA400"       "Temperature, at 400 mb"                              "K"
+state    real   ta450      ij   misc    1  -   h{8}   "TA450"       "Temperature, at 450 mb"                              "K"
+##state    real   ta500      ij   misc    1  -   h{8}   "TA500"       "Temperature, at 500 mb"                              "K"
+state    real   ta550      ij   misc    1  -   h{8}   "TA550"       "Temperature, at 550 mb"                              "K"
+state    real   ta600      ij   misc    1  -   h{8}   "TA600"       "Temperature, at 600 mb"                              "K"
+state    real   ta650      ij   misc    1  -   h{8}   "TA650"       "Temperature, at 650 mb"                              "K"
+##state    real   ta700      ij   misc    1  -   h{8}   "TA700"       "Temperature, at 700 mb"                              "K"
+state    real   ta750      ij   misc    1  -   h{8}   "TA750"       "Temperature, at 750 mb"                              "K"
+state    real   ta800      ij   misc    1  -   h{8}   "TA800"       "Temperature, at 800 mb"                              "K"
+##state    real   ta850      ij   misc    1  -   h{8}   "TA850"       "Temperature, at 850 mb"                              "K"
+state    real   ta900      ij   misc    1  -   h{8}   "TA900"       "Temperature, at 900 mb"                              "K"
+state    real   ta950      ij   misc    1  -   h{8}   "TA950"       "Temperature, at 950 mb"                              "K"
+state    real   ta1000     ij   misc    1  -   h{8}   "TA1000"      "Temperature, at 1000 mb"                             "K"
+#
+# (2) Dew Point Temperature
+#
+state    real   td050      ij   misc    1  -   h{8}   "TD050"       "Dew Point Temperature, at 50 mb"                     "K"
+state    real   td100      ij   misc    1  -   h{8}   "TD100"       "Dew Point Temperature, at 100 mb"                    "K"
+state    real   td150      ij   misc    1  -   h{8}   "TD150"       "Dew Point Temperature, at 150 mb"                    "K"
+state    real   td200      ij   misc    1  -   h{8}   "TD200"       "Dew Point Temperature, at 200 mb"                    "K"
+state    real   td250      ij   misc    1  -   h{8}   "TD250"       "Dew Point Temperature, at 250 mb"                    "K"
+state    real   td300      ij   misc    1  -   h{8}   "TD300"       "Dew Point Temperature, at 300 mb"                    "K"
+state    real   td350      ij   misc    1  -   h{8}   "TD350"       "Dew Point Temperature, at 350 mb"                    "K"
+state    real   td400      ij   misc    1  -   h{8}   "TD400"       "Dew Point Temperature, at 400 mb"                    "K"
+state    real   td450      ij   misc    1  -   h{8}   "TD450"       "Dew Point Temperature, at 450 mb"                    "K"
+state    real   td500      ij   misc    1  -   h{8}   "TD500"       "Dew Point Temperature, at 500 mb"                    "K"
+state    real   td550      ij   misc    1  -   h{8}   "TD550"       "Dew Point Temperature, at 550 mb"                    "K"
+state    real   td600      ij   misc    1  -   h{8}   "TD600"       "Dew Point Temperature, at 600 mb"                    "K"
+state    real   td650      ij   misc    1  -   h{8}   "TD650"       "Dew Point Temperature, at 650 mb"                    "K"
+state    real   td700      ij   misc    1  -   h{8}   "TD700"       "Dew Point Temperature, at 700 mb"                    "K"
+state    real   td750      ij   misc    1  -   h{8}   "TD750"       "Dew Point Temperature, at 750 mb"                    "K"
+state    real   td800      ij   misc    1  -   h{8}   "TD800"       "Dew Point Temperature, at 800 mb"                    "K"
+state    real   td850      ij   misc    1  -   h{8}   "TD850"       "Dew Point Temperature, at 850 mb"                    "K"
+state    real   td900      ij   misc    1  -   h{8}   "TD900"       "Dew Point Temperature, at 900 mb"                    "K"
+state    real   td950      ij   misc    1  -   h{8}   "TD950"       "Dew Point Temperature, at 950 mb"                    "K"
+state    real   td1000     ij   misc    1  -   h{8}   "TD1000"      "Dew Point Temperature, at 1000 mb"                   "K"
+#
+# (3) Relative Humidity
+#
+state    real   rh050      ij   misc    1  -   h{8}   "RH050"       "Relative humidity, water-only formula, at 50 mb"     "%"
+state    real   rh100      ij   misc    1  -   h{8}   "RH100"       "Relative humidity, water-only formula, at 100 mb"    "%"
+state    real   rh150      ij   misc    1  -   h{8}   "RH150"       "Relative humidity, water-only formula, at 150 mb"    "%"
+state    real   rh200      ij   misc    1  -   h{8}   "RH200"       "Relative humidity, water-only formula, at 200 mb"    "%"
+##state    real   rh250      ij   misc    1  -   h{8}   "RH250"       "Relative humidity, water-only formula, at 250 mb"    "%"
+##state    real   rh300      ij   misc    1  -   h{8}   "RH300"       "Relative humidity, water-only formula, at 300 mb"    "%"
+state    real   rh350      ij   misc    1  -   h{8}   "RH350"       "Relative humidity, water-only formula, at 350 mb"    "%" 
+state    real   rh400      ij   misc    1  -   h{8}   "RH400"       "Relative humidity, water-only formula, at 400 mb"    "%"
+state    real   rh450      ij   misc    1  -   h{8}   "RH450"       "Relative humidity, water-only formula, at 450 mb"    "%"
+##state    real   rh500      ij   misc    1  -   h{8}   "RH500"       "Relative humidity, water-only formula, at 500 mb"    "%"
+state    real   rh550      ij   misc    1  -   h{8}   "RH550"       "Relative humidity, water-only formula, at 550 mb"    "%"
+state    real   rh600      ij   misc    1  -   h{8}   "RH600"       "Relative humidity, water-only formula, at 600 mb"    "%"
+state    real   rh650      ij   misc    1  -   h{8}   "RH650"       "Relative humidity, water-only formula, at 650 mb"    "%"
+##state    real   rh700      ij   misc    1  -   h{8}   "RH700"       "Relative humidity, water-only formula, at 700 mb"    "%"
+state    real   rh750      ij   misc    1  -   h{8}   "RH750"       "Relative humidity, water-only formula, at 750 mb"    "%"
+state    real   rh800      ij   misc    1  -   h{8}   "RH800"       "Relative humidity, water-only formula, at 800 mb"    "%"
+##state    real   rh850      ij   misc    1  -   h{8}   "RH850"       "Relative humidity, water-only formula, at 850 mb"    "%"
+state    real   rh900      ij   misc    1  -   h{8}   "RH900"       "Relative humidity, water-only formula, at 900 mb"    "%"
+state    real   rh950      ij   misc    1  -   h{8}   "RH950"       "Relative humidity, water-only formula, at 950 mb"    "%"
+state    real   rh1000     ij   misc    1  -   h{8}   "RH1000"      "Relative humidity, water-only formula, at 1000 mb"   "%"
+#
+# (4) Mixing Ratio
+#
+state    real   qv050      ij   misc    1  -   h{8}   "QV050"       "Water Vapor Mixing Ratio, at 50 mb"                  "kg/kg"
+state    real   qv100      ij   misc    1  -   h{8}   "QV100"       "Water Vapor Mixing Ratio, at 100 mb"                 "kg/kg"
+state    real   qv150      ij   misc    1  -   h{8}   "QV150"       "Water Vapor Mixing Ratio, at 150 mb"                 "kg/kg"
+state    real   qv200      ij   misc    1  -   h{8}   "QV200"       "Water Vapor Mixing Ratio, at 200 mb"                 "kg/kg"
+state    real   qv250      ij   misc    1  -   h{8}   "QV250"       "Water Vapor Mixing Ratio, at 250 mb"                 "kg/kg"
+state    real   qv300      ij   misc    1  -   h{8}   "QV300"       "Water Vapor Mixing Ratio, at 300 mb"                 "kg/kg"
+state    real   qv350      ij   misc    1  -   h{8}   "QV350"       "Water Vapor Mixing Ratio, at 350 mb"                 "kg/kg"
+state    real   qv400      ij   misc    1  -   h{8}   "QV400"       "Water Vapor Mixing Ratio, at 400 mb"                 "kg/kg"
+state    real   qv450      ij   misc    1  -   h{8}   "QV450"       "Water Vapor Mixing Ratio, at 450 mb"                 "kg/kg"
+state    real   qv500      ij   misc    1  -   h{8}   "QV500"       "Water Vapor Mixing Ratio, at 500 mb"                 "kg/kg"
+state    real   qv550      ij   misc    1  -   h{8}   "QV550"       "Water Vapor Mixing Ratio, at 550 mb"                 "kg/kg"
+state    real   qv600      ij   misc    1  -   h{8}   "QV600"       "Water Vapor Mixing Ratio, at 600 mb"                 "kg/kg"
+state    real   qv650      ij   misc    1  -   h{8}   "QV650"       "Water Vapor Mixing Ratio, at 650 mb"                 "kg/kg"
+state    real   qv700      ij   misc    1  -   h{8}   "QV700"       "Water Vapor Mixing Ratio, at 700 mb"                 "kg/kg"
+state    real   qv750      ij   misc    1  -   h{8}   "QV750"       "Water Vapor Mixing Ratio, at 750 mb"                 "kg/kg"
+state    real   qv800      ij   misc    1  -   h{8}   "QV800"       "Water Vapor Mixing Ratio, at 800 mb"                 "kg/kg"
+state    real   qv850      ij   misc    1  -   h{8}   "QV850"       "Water Vapor Mixing Ratio, at 850 mb"                 "kg/kg"
+state    real   qv900      ij   misc    1  -   h{8}   "QV900"       "Water Vapor Mixing Ratio, at 900 mb"                 "kg/kg"
+state    real   qv950      ij   misc    1  -   h{8}   "QV950"       "Water Vapor Mixing Ratio, at 950 mb"                 "kg/kg"
+state    real   qv1000     ij   misc    1  -   h{8}   "QV1000"      "Water Vapor Mixing Ratio, at 1000 mb"                "kg/kg"
+#
+# (5) WSPD
+#
+state    real   wspd050    ij   misc    1  -   h{8}   "WSPD050"     "Scalar wind speed, at 50 mb"                         "M/S"
+state    real   wspd100    ij   misc    1  -   h{8}   "WSPD100"     "Scalar wind speed, at 100 mb"                        "M/S"
+state    real   wspd150    ij   misc    1  -   h{8}   "WSPD150"     "Scalar wind speed, at 150 mb"                        "M/S"
+state    real   wspd200    ij   misc    1  -   h{8}   "WSPD200"     "Scalar wind speed, at 200 mb"                        "M/S"
+##state    real   wspd250    ij   misc    1  -   h{8}   "WSPD250"     "Scalar wind speed, at 250 mb"                        "M/S"
+##state    real   wspd300    ij   misc    1  -   h{8}   "WSPD300"     "Scalar wind speed, at 300 mb"                        "M/S"
+state    real   wspd350    ij   misc    1  -   h{8}   "WSPD350"     "Scalar wind speed, at 350 mb"                        "M/S"
+state    real   wspd400    ij   misc    1  -   h{8}   "WSPD400"     "Scalar wind speed, at 400 mb"                        "M/S"
+state    real   wspd450    ij   misc    1  -   h{8}   "WSPD450"     "Scalar wind speed, at 450 mb"                        "M/S"
+state    real   wspd500    ij   misc    1  -   h{8}   "WSPD500"     "Scalar wind speed, at 500 mb"                        "M/S"
+state    real   wspd550    ij   misc    1  -   h{8}   "WSPD550"     "Scalar wind speed, at 550 mb"                        "M/S"
+state    real   wspd600    ij   misc    1  -   h{8}   "WSPD600"     "Scalar wind speed, at 600 mb"                        "M/S"
+state    real   wspd650    ij   misc    1  -   h{8}   "WSPD650"     "Scalar wind speed, at 650 mb"                        "M/S"
+state    real   wspd700    ij   misc    1  -   h{8}   "WSPD700"     "Scalar wind speed, at 700 mb"                        "M/S"
+state    real   wspd750    ij   misc    1  -   h{8}   "WSPD750"     "Scalar wind speed, at 750 mb"                        "M/S"
+state    real   wspd800    ij   misc    1  -   h{8}   "WSPD800"     "Scalar wind speed, at 800 mb"                        "M/S"
+state    real   wspd850    ij   misc    1  -   h{8}   "WSPD850"     "Scalar wind speed, at 850 mb"                        "M/S"
+state    real   wspd900    ij   misc    1  -   h{8}   "WSPD900"     "Scalar wind speed, at 900 mb"                        "M/S"
+state    real   wspd950    ij   misc    1  -   h{8}   "WSPD950"     "Scalar wind speed, at 950 mb"                        "M/S"
+state    real   wspd1000   ij   misc    1  -   h{8}   "WSPD1000"    "Scalar wind speed, at 1000 mb"                       "M/S"
+#
+# (6) WDIR
+#
+state    real   w_dir050    ij   misc    1  -   h{8}   "WDIR050"    "Wind-direction at at 50 mb clockwise-from-north"     "Degrees"
+state    real   w_dir100    ij   misc    1  -   h{8}   "WDIR100"    "Wind-direction at at 100 mb clockwise-from-north"    "Degrees"
+state    real   w_dir150    ij   misc    1  -   h{8}   "WDIR150"    "Wind-direction at at 150 mb clockwise-from-north"    "Degrees"
+state    real   w_dir200    ij   misc    1  -   h{8}   "WDIR200"    "Wind-direction at at 200 mb clockwise-from-north"    "Degrees"
+##state    real   w_dir250    ij   misc    1  -   h{8}   "WDIR250     "Wind-direction at at 250 mb clockwise-from-north"    "Degrees "
+##state    real   w_dir300    ij   misc    1  -   h{8}   "WDIR300     "Wind-direction at at 300 mb clockwise-from-north"    "Degrees "
+state    real   w_dir350    ij   misc    1  -   h{8}   "WDIR350"    "Wind-direction at at 350 mb clockwise-from-north"    "Degrees"
+state    real   w_dir400    ij   misc    1  -   h{8}   "WDIR400"    "Wind-direction at at 400 mb clockwise-from-north"    "Degrees"
+state    real   w_dir450    ij   misc    1  -   h{8}   "WDIR450"    "Wind-direction at at 450 mb clockwise-from-north"    "Degrees"
+state    real   w_dir500    ij   misc    1  -   h{8}   "WDIR500"    "Wind-direction at at 500 mb clockwise-from-north"    "Degrees"
+state    real   w_dir550    ij   misc    1  -   h{8}   "WDIR550"    "Wind-direction at at 550 mb clockwise-from-north"    "Degrees"
+state    real   w_dir600    ij   misc    1  -   h{8}   "WDIR600"    "Wind-direction at at 600 mb clockwise-from-north"    "Degrees"
+state    real   w_dir650    ij   misc    1  -   h{8}   "WDIR650"    "Wind-direction at at 650 mb clockwise-from-north"    "Degrees"
+##state    real   w_dir700    ij   misc    1  -   h{8}   "WDIR700     "Wind-direction at at 700 mb clockwise-from-north"    "Degrees "
+state    real   w_dir750    ij   misc    1  -   h{8}   "WDIR750"    "Wind-direction at at 750 mb clockwise-from-north"    "Degrees"
+state    real   w_dir800    ij   misc    1  -   h{8}   "WDIR800"    "Wind-direction at at 800 mb clockwise-from-north"    "Degrees"
+state    real   w_dir850    ij   misc    1  -   h{8}   "WDIR850"    "Wind-direction at at 850 mb clockwise-from-north"    "Degrees"
+state    real   w_dir900    ij   misc    1  -   h{8}   "WDIR900"    "Wind-direction at at 900 mb clockwise-from-north"    "Degrees"
+state    real   w_dir950    ij   misc    1  -   h{8}   "WDIR950"    "Wind-direction at at 950 mb clockwise-from-north"    "Degrees"
+state    real   w_dir1000   ij   misc    1  -   h{8}   "WDIR1000"   "Wind-direction at at 1000 mb clockwise-from-north"     "Degrees"
+#
+# (7) Air Potential Temperature
+#
+state    real   theta050      ij   misc    1  -   h{8}   "THETA050"       "Potential Temperature, at 50 mb"               "K"
+state    real   theta100      ij   misc    1  -   h{8}   "THETA100"       "Potential Temperature, at 100 mb"              "K"
+state    real   theta150      ij   misc    1  -   h{8}   "THETA150"       "Potential Temperature, at 150 mb"              "K"
+state    real   theta200      ij   misc    1  -   h{8}   "THETA200"       "Potential Temperature, at 200 mb"              "K"
+state    real   theta250      ij   misc    1  -   h{8}   "THETA250"       "Potential Temperature, at 250 mb"              "K"
+state    real   theta300      ij   misc    1  -   h{8}   "THETA300"       "Potential Temperature, at 300 mb"              "K"
+state    real   theta350      ij   misc    1  -   h{8}   "THETA350"       "Potential Temperature, at 350 mb"              "K"
+state    real   theta400      ij   misc    1  -   h{8}   "THETA400"       "Potential Temperature, at 400 mb"              "K"
+state    real   theta450      ij   misc    1  -   h{8}   "THETA450"       "Potential Temperature, at 450 mb"              "K"
+state    real   theta500      ij   misc    1  -   h{8}   "THETA500"       "Potential Temperature, at 500 mb"              "K"
+state    real   theta550      ij   misc    1  -   h{8}   "THETA550"       "Potential Temperature, at 550 mb"              "K"
+state    real   theta600      ij   misc    1  -   h{8}   "THETA600"       "Potential Temperature, at 600 mb"              "K"
+state    real   theta650      ij   misc    1  -   h{8}   "THETA650"       "Potential Temperature, at 650 mb"              "K"
+state    real   theta700      ij   misc    1  -   h{8}   "THETA700"       "Potential Temperature, at 700 mb"              "K"
+state    real   theta750      ij   misc    1  -   h{8}   "THETA750"       "Potential Temperature, at 750 mb"              "K"
+state    real   theta800      ij   misc    1  -   h{8}   "THETA800"       "Potential Temperature, at 800 mb"              "K"
+state    real   theta850      ij   misc    1  -   h{8}   "THETA850"       "Potential Temperature, at 850 mb"              "K"
+state    real   theta900      ij   misc    1  -   h{8}   "THETA900"       "Potential Temperature, at 900 mb"              "K"
+state    real   theta950      ij   misc    1  -   h{8}   "THETA950"       "Potential Temperature, at 950 mb"              "K"
+state    real   theta1000     ij   misc    1  -   h{8}   "THETA1000"      "Potential Temperature, at 1000 mb"             "K"
+#
+# (8) Geopotential Height
+#
+state    real   z050          ij   misc    1  -   h{8}   "Z050"       "Elevation above mean sea level at 50 mb"           "M"
+state    real   z100          ij   misc    1  -   h{8}   "Z100"       "Elevation above mean sea level at 100 mb"          "M"
+state    real   z150          ij   misc    1  -   h{8}   "Z150"       "Elevation above mean sea level at 150 mb"          "M"
+state    real   z200          ij   misc    1  -   h{8}   "Z200"       "Elevation above mean sea level at 200 mb"          "M"
+##state    real   z250          ij   misc    1  -   h{8}   "Z250"       "Elevation above mean sea level at 250 mb"          "M"
+##state    real   z300          ij   misc    1  -   h{8}   "Z300"       "Elevation above mean sea level at 300 mb"          "M"
+state    real   z350          ij   misc    1  -   h{8}   "Z350"       "Elevation above mean sea level at 350 mb"          "M"
+state    real   z400          ij   misc    1  -   h{8}   "Z400"       "Elevation above mean sea level at 400 mb"          "M"
+state    real   z450          ij   misc    1  -   h{8}   "Z450"       "Elevation above mean sea level at 450 mb"          "M"
+##state    real   z500          ij   misc    1  -   h{8}   "Z500"       "Elevation above mean sea level at 500 mb"          "M"
+state    real   z550          ij   misc    1  -   h{8}   "Z550"       "Elevation above mean sea level at 550 mb"          "M"
+state    real   z600          ij   misc    1  -   h{8}   "Z600"       "Elevation above mean sea level at 600 mb"          "M"
+state    real   z650          ij   misc    1  -   h{8}   "Z650"       "Elevation above mean sea level at 650 mb"          "M"
+##state    real   z700          ij   misc    1  -   h{8}   "Z700"       "Elevation above mean sea level at 700 mb"          "M"
+state    real   z750          ij   misc    1  -   h{8}   "Z750"       "Elevation above mean sea level at 750 mb"          "M"
+state    real   z800          ij   misc    1  -   h{8}   "Z800"       "Elevation above mean sea level at 800 mb"          "M"
+##state    real   z850          ij   misc    1  -   h{8}   "Z850"       "Elevation above mean sea level at 850 mb"          "M"
+state    real   z900          ij   misc    1  -   h{8}   "Z900"       "Elevation above mean sea level at 900 mb"          "M"
+state    real   z950          ij   misc    1  -   h{8}   "Z950"       "Elevation above mean sea level at 950 mb"          "M"
+##state    real   z1000         ij   misc    1  -   h{8}   "Z1000"      "Elevation above mean sea level at 1000 mb"         "M"
+#
+# (9) Vertical Wind-Speed
+#
+state    real   wwind050    ij   misc    1  -   h{8}   "WWIND050"     "Average Vertical W wind component at 50 mb"        "CM/S"
+state    real   wwind100    ij   misc    1  -   h{8}   "WWIND100"     "Average Vertical W wind component at 100 mb"       "CM/S"
+state    real   wwind150    ij   misc    1  -   h{8}   "WWIND150"     "Average Vertical W wind component at 150 mb"       "CM/S"
+state    real   wwind200    ij   misc    1  -   h{8}   "WWIND200"     "Average Vertical W wind component at 200 mb"       "CM/S"
+state    real   wwind250    ij   misc    1  -   h{8}   "WWIND250"     "Average Vertical W wind component at 250 mb"       "CM/S"
+state    real   wwind300    ij   misc    1  -   h{8}   "WWIND300"     "Average Vertical W wind component at 300 mb"       "CM/S"
+state    real   wwind350    ij   misc    1  -   h{8}   "WWIND350"     "Average Vertical W wind component at 350 mb"       "CM/S"
+state    real   wwind400    ij   misc    1  -   h{8}   "WWIND400"     "Average Vertical W wind component at 400 mb"       "CM/S"
+state    real   wwind450    ij   misc    1  -   h{8}   "WWIND450"     "Average Vertical W wind component at 450 mb"       "CM/S"
+state    real   wwind500    ij   misc    1  -   h{8}   "WWIND500"     "Average Vertical W wind component at 500 mb"       "CM/S"
+state    real   wwind550    ij   misc    1  -   h{8}   "WWIND550"     "Average Vertical W wind component at 550 mb"       "CM/S"
+state    real   wwind600    ij   misc    1  -   h{8}   "WWIND600"     "Average Vertical W wind component at 600 mb"       "CM/S"
+state    real   wwind650    ij   misc    1  -   h{8}   "WWIND650"     "Average Vertical W wind component at 650 mb"       "CM/S"
+##state    real   wwind700    ij   misc    1  -   h{8}   "WWIND700"     "Average Vertical W wind component at 700 mb"       "CM/S"
+state    real   wwind750    ij   misc    1  -   h{8}   "WWIND750"     "Average Vertical W wind component at 750 mb"       "CM/S"
+state    real   wwind800    ij   misc    1  -   h{8}   "WWIND800"     "Average Vertical W wind component at 800 mb"       "CM/S"
+state    real   wwind850    ij   misc    1  -   h{8}   "WWIND850"     "Average Vertical W wind component at 850 mb"       "CM/S"
+state    real   wwind900    ij   misc    1  -   h{8}   "WWIND900"     "Average Vertical W wind component at 900 mb"       "CM/S"
+state    real   wwind950    ij   misc    1  -   h{8}   "WWIND950"     "Average Vertical W wind component at 950 mb"       "CM/S"
+state    real   wwind1000   ij   misc    1  -   h{8}   "WWIND1000"    "Average Vertical W wind component at 1000 mb"      "CM/S"
+#
+# (10a) Total Condensed Water (incl. Hydrometeors)
+#
+state    real   tcondwat050  ij  misc    1  -   h{8}   "TCONWAT050"       "Total Cld+Hydrometeor Mix Ratio at 50 mb"       "kg/kg"
+state    real   tcondwat100  ij  misc    1  -   h{8}   "TCONWAT100"       "Total Cld+Hydrometeor Mix Ratio at 100 mb"      "kg/kg"
+state    real   tcondwat150  ij  misc    1  -   h{8}   "TCONWAT150"       "Total Cld+Hydrometeor Mix Ratio at 150 mb"      "kg/kg"
+state    real   tcondwat200  ij  misc    1  -   h{8}   "TCONWAT200"       "Total Cld+Hydrometeor Mix Ratio at 200 mb"      "kg/kg"
+state    real   tcondwat250  ij  misc    1  -   h{8}   "TCONWAT250"       "Total Cld+Hydrometeor Mix Ratio at 250 mb"      "kg/kg"
+state    real   tcondwat300  ij  misc    1  -   h{8}   "TCONWAT300"       "Total Cld+Hydrometeor Mix Ratio at 300 mb"      "kg/kg"
+state    real   tcondwat350  ij  misc    1  -   h{8}   "TCONWAT350"       "Total Cld+Hydrometeor Mix Ratio at 350 mb"      "kg/kg"
+state    real   tcondwat400  ij  misc    1  -   h{8}   "TCONWAT400"       "Total Cld+Hydrometeor Mix Ratio at 400 mb"      "kg/kg"
+state    real   tcondwat450  ij  misc    1  -   h{8}   "TCONWAT450"       "Total Cld+Hydrometeor Mix Ratio at 450 mb"      "kg/kg"
+state    real   tcondwat500  ij  misc    1  -   h{8}   "TCONWAT500"       "Total Cld+Hydrometeor Mix Ratio at 500 mb"      "kg/kg"
+state    real   tcondwat550  ij  misc    1  -   h{8}   "TCONWAT550"       "Total Cld+Hydrometeor Mix Ratio at 550 mb"      "kg/kg"
+state    real   tcondwat600  ij  misc    1  -   h{8}   "TCONWAT600"       "Total Cld+Hydrometeor Mix Ratio at 600 mb"      "kg/kg"
+state    real   tcondwat650  ij  misc    1  -   h{8}   "TCONWAT650"       "Total Cld+Hydrometeor Mix Ratio at 650 mb"      "kg/kg"
+state    real   tcondwat700  ij  misc    1  -   h{8}   "TCONWAT700"       "Total Cld+Hydrometeor Mix Ratio at 700 mb"      "kg/kg"
+state    real   tcondwat750  ij  misc    1  -   h{8}   "TCONWAT750"       "Total Cld+Hydrometeor Mix Ratio at 750 mb"      "kg/kg"
+state    real   tcondwat800  ij  misc    1  -   h{8}   "TCONWAT800"       "Total Cld+Hydrometeor Mix Ratio at 800 mb"      "kg/kg"
+state    real   tcondwat850  ij  misc    1  -   h{8}   "TCONWAT850"       "Total Cld+Hydrometeor Mix Ratio at 850 mb"      "kg/kg"
+state    real   tcondwat900  ij  misc    1  -   h{8}   "TCONWAT900"       "Total Cld+Hydrometeor Mix Ratio at 900 mb"      "kg/kg"
+state    real   tcondwat950  ij  misc    1  -   h{8}   "TCONWAT950"       "Total Cld+Hydrometeor Mix Ratio at 950 mb"      "kg/kg"
+state    real   tcondwat1000 ij  misc    1  -   h{8}   "TCONWAT1000"      "Total Cld+Hydrometeor Mix Ratio at 1000 mb"     "kg/kg"
+#
+# (10b) Cloud Water Fraction of Total Condensed Water (incl. Hydrometeors)
+#
+state    real   clconfrc050  ij  misc    1  -   h{8}   "CLCONFR050"       "Cld-Cond Frc of Tot Condensate at 50 mb"       "%"
+state    real   clconfrc100  ij  misc    1  -   h{8}   "CLCONFR100"       "Cld-Cond Frc of Tot Condensate at 100 mb"      "%"
+state    real   clconfrc150  ij  misc    1  -   h{8}   "CLCONFR150"       "Cld-Cond Frc of Tot Condensate at 150 mb"      "%"
+state    real   clconfrc200  ij  misc    1  -   h{8}   "CLCONFR200"       "Cld-Cond Frc of Tot Condensate at 200 mb"      "%"
+state    real   clconfrc250  ij  misc    1  -   h{8}   "CLCONFR250"       "Cld-Cond Frc of Tot Condensate at 250 mb"      "%"
+state    real   clconfrc300  ij  misc    1  -   h{8}   "CLCONFR300"       "Cld-Cond Frc of Tot Condensate at 300 mb"      "%"
+state    real   clconfrc350  ij  misc    1  -   h{8}   "CLCONFR350"       "Cld-Cond Frc of Tot Condensate at 350 mb"      "%"
+state    real   clconfrc400  ij  misc    1  -   h{8}   "CLCONFR400"       "Cld-Cond Frc of Tot Condensate at 400 mb"      "%"
+state    real   clconfrc450  ij  misc    1  -   h{8}   "CLCONFR450"       "Cld-Cond Frc of Tot Condensate at 450 mb"      "%"
+state    real   clconfrc500  ij  misc    1  -   h{8}   "CLCONFR500"       "Cld-Cond Frc of Tot Condensate at 500 mb"      "%"
+state    real   clconfrc550  ij  misc    1  -   h{8}   "CLCONFR550"       "Cld-Cond Frc of Tot Condensate at 550 mb"      "%"
+state    real   clconfrc600  ij  misc    1  -   h{8}   "CLCONFR600"       "Cld-Cond Frc of Tot Condensate at 600 mb"      "%"
+state    real   clconfrc650  ij  misc    1  -   h{8}   "CLCONFR650"       "Cld-Cond Frc of Tot Condensate at 650 mb"      "%"
+state    real   clconfrc700  ij  misc    1  -   h{8}   "CLCONFR700"       "Cld-Cond Frc of Tot Condensate at 700 mb"      "%"
+state    real   clconfrc750  ij  misc    1  -   h{8}   "CLCONFR750"       "Cld-Cond Frc of Tot Condensate at 750 mb"      "%"
+state    real   clconfrc800  ij  misc    1  -   h{8}   "CLCONFR800"       "Cld-Cond Frc of Tot Condensate at 800 mb"      "%"
+state    real   clconfrc850  ij  misc    1  -   h{8}   "CLCONFR850"       "Cld-Cond Frc of Tot Condensate at 850 mb"      "%"
+state    real   clconfrc900  ij  misc    1  -   h{8}   "CLCONFR900"       "Cld-Cond Frc of Tot Condensate at 900 mb"      "%"
+state    real   clconfrc950  ij  misc    1  -   h{8}   "CLCONFR950"       "Cld-Cond Frc of Tot Condensate at 950 mb"      "%"
+state    real   clconfrc1000 ij  misc    1  -   h{8}   "CLCONFR1000"      "Cld-Cond Frc of Tot Condensate at 1000 mb"     "%"
+#
+# (11) Liq Rain Fraction of Total Condensed Water (incl. Hydrometeors)
+#
+state    real   rnwatfrc050  ij  misc    1  -   h{8}   "RNWATFR050"       "Rain-Wat Frc of Tot Condensate at 50 mb"       "%"
+state    real   rnwatfrc100  ij  misc    1  -   h{8}   "RNWATFR100"       "Rain-Wat Frc of Tot Condensate at 100 mb"      "%"
+state    real   rnwatfrc150  ij  misc    1  -   h{8}   "RNWATFR150"       "Rain-Wat Frc of Tot Condensate at 150 mb"      "%"
+state    real   rnwatfrc200  ij  misc    1  -   h{8}   "RNWATFR200"       "Rain-Wat Frc of Tot Condensate at 200 mb"      "%"
+state    real   rnwatfrc250  ij  misc    1  -   h{8}   "RNWATFR250"       "Rain-Wat Frc of Tot Condensate at 250 mb"      "%"
+state    real   rnwatfrc300  ij  misc    1  -   h{8}   "RNWATFR300"       "Rain-Wat Frc of Tot Condensate at 300 mb"      "%"
+state    real   rnwatfrc350  ij  misc    1  -   h{8}   "RNWATFR350"       "Rain-Wat Frc of Tot Condensate at 350 mb"      "%"
+state    real   rnwatfrc400  ij  misc    1  -   h{8}   "RNWATFR400"       "Rain-Wat Frc of Tot Condensate at 400 mb"      "%"
+state    real   rnwatfrc450  ij  misc    1  -   h{8}   "RNWATFR450"       "Rain-Wat Frc of Tot Condensate at 450 mb"      "%"
+state    real   rnwatfrc500  ij  misc    1  -   h{8}   "RNWATFR500"       "Rain-Wat Frc of Tot Condensate at 500 mb"      "%"
+state    real   rnwatfrc550  ij  misc    1  -   h{8}   "RNWATFR550"       "Rain-Wat Frc of Tot Condensate at 550 mb"      "%"
+state    real   rnwatfrc600  ij  misc    1  -   h{8}   "RNWATFR600"       "Rain-Wat Frc of Tot Condensate at 600 mb"      "%"
+state    real   rnwatfrc650  ij  misc    1  -   h{8}   "RNWATFR650"       "Rain-Wat Frc of Tot Condensate at 650 mb"      "%"
+state    real   rnwatfrc700  ij  misc    1  -   h{8}   "RNWATFR700"       "Rain-Wat Frc of Tot Condensate at 700 mb"      "%"
+state    real   rnwatfrc750  ij  misc    1  -   h{8}   "RNWATFR750"       "Rain-Wat Frc of Tot Condensate at 750 mb"      "%"
+state    real   rnwatfrc800  ij  misc    1  -   h{8}   "RNWATFR800"       "Rain-Wat Frc of Tot Condensate at 800 mb"      "%"
+state    real   rnwatfrc850  ij  misc    1  -   h{8}   "RNWATFR850"       "Rain-Wat Frc of Tot Condensate at 850 mb"      "%"
+state    real   rnwatfrc900  ij  misc    1  -   h{8}   "RNWATFR900"       "Rain-Wat Frc of Tot Condensate at 900 mb"      "%"
+state    real   rnwatfrc950  ij  misc    1  -   h{8}   "RNWATFR950"       "Rain-Wat Frc of Tot Condensate at 950 mb"      "%"
+state    real   rnwatfrc1000 ij  misc    1  -   h{8}   "RNWATFR1000"      "Rain-Wat Frc of Tot Condensate at 1000 mb"     "%"
+#
+# (12) Snow Fraction of Total Condensed Water (incl. Hydrometeors)
+#
+state    real   snowfrc050  ij  misc    1  -   h{8}   "SNOWFR050"       "Snow Fraction of Tot Condensate at 50 mb"        "%"
+state    real   snowfrc100  ij  misc    1  -   h{8}   "SNOWFR100"       "Snow Fraction of Tot Condensate at 100 mb"       "%"
+state    real   snowfrc150  ij  misc    1  -   h{8}   "SNOWFR150"       "Snow Fraction of Tot Condensate at 150 mb"       "%"
+state    real   snowfrc200  ij  misc    1  -   h{8}   "SNOWFR200"       "Snow Fraction of Tot Condensate at 200 mb"       "%"
+state    real   snowfrc250  ij  misc    1  -   h{8}   "SNOWFR250"       "Snow Fraction of Tot Condensate at 250 mb"       "%"
+state    real   snowfrc300  ij  misc    1  -   h{8}   "SNOWFR300"       "Snow Fraction of Tot Condensate at 300 mb"       "%"
+state    real   snowfrc350  ij  misc    1  -   h{8}   "SNOWFR350"       "Snow Fraction of Tot Condensate at 350 mb"       "%"
+state    real   snowfrc400  ij  misc    1  -   h{8}   "SNOWFR400"       "Snow Fraction of Tot Condensate at 400 mb"       "%"
+state    real   snowfrc450  ij  misc    1  -   h{8}   "SNOWFR450"       "Snow Fraction of Tot Condensate at 450 mb"       "%"
+state    real   snowfrc500  ij  misc    1  -   h{8}   "SNOWFR500"       "Snow Fraction of Tot Condensate at 500 mb"       "%"
+state    real   snowfrc550  ij  misc    1  -   h{8}   "SNOWFR550"       "Snow Fraction of Tot Condensate at 550 mb"       "%"
+state    real   snowfrc600  ij  misc    1  -   h{8}   "SNOWFR600"       "Snow Fraction of Tot Condensate at 600 mb"       "%"
+state    real   snowfrc650  ij  misc    1  -   h{8}   "SNOWFR650"       "Snow Fraction of Tot Condensate at 650 mb"       "%"
+state    real   snowfrc700  ij  misc    1  -   h{8}   "SNOWFR700"       "Snow Fraction of Tot Condensate at 700 mb"       "%"
+state    real   snowfrc750  ij  misc    1  -   h{8}   "SNOWFR750"       "Snow Fraction of Tot Condensate at 750 mb"       "%"
+state    real   snowfrc800  ij  misc    1  -   h{8}   "SNOWFR800"       "Snow Fraction of Tot Condensate at 800 mb"       "%"
+state    real   snowfrc850  ij  misc    1  -   h{8}   "SNOWFR850"       "Snow Fraction of Tot Condensate at 850 mb"       "%"
+state    real   snowfrc900  ij  misc    1  -   h{8}   "SNOWFR900"       "Snow Fraction of Tot Condensate at 900 mb"       "%"
+state    real   snowfrc950  ij  misc    1  -   h{8}   "SNOWFR950"       "Snow Fraction of Tot Condensate at 950 mb"       "%"
+state    real   snowfrc1000 ij  misc    1  -   h{8}   "SNOWFR1000"      "Snow Fraction of Tot Condensate at 1000 mb"      "%"
+#
+# (13) Ice Fraction of Total Condensed Water (incl. Hydrometeors)
+#
+state    real   grplfrc050  ij  misc    1  -   h{8}   "GRPLFR050"       "Graupel Fraction of Tot Condensate at 50 mb"     "%"
+state    real   grplfrc100  ij  misc    1  -   h{8}   "GRPLFR100"       "Graupel Fraction of Tot Condensate at 100 mb"    "%"
+state    real   grplfrc150  ij  misc    1  -   h{8}   "GRPLFR150"       "Graupel Fraction of Tot Condensate at 150 mb"    "%"
+state    real   grplfrc200  ij  misc    1  -   h{8}   "GRPLFR200"       "Graupel Fraction of Tot Condensate at 200 mb"    "%"
+state    real   grplfrc250  ij  misc    1  -   h{8}   "GRPLFR250"       "Graupel Fraction of Tot Condensate at 250 mb"    "%"
+state    real   grplfrc300  ij  misc    1  -   h{8}   "GRPLFR300"       "Graupel Fraction of Tot Condensate at 300 mb"    "%"
+state    real   grplfrc350  ij  misc    1  -   h{8}   "GRPLFR350"       "Graupel Fraction of Tot Condensate at 350 mb"    "%"
+state    real   grplfrc400  ij  misc    1  -   h{8}   "GRPLFR400"       "Graupel Fraction of Tot Condensate at 400 mb"    "%"
+state    real   grplfrc450  ij  misc    1  -   h{8}   "GRPLFR450"       "Graupel Fraction of Tot Condensate at 450 mb"    "%"
+state    real   grplfrc500  ij  misc    1  -   h{8}   "GRPLFR500"       "Graupel Fraction of Tot Condensate at 500 mb"    "%"
+state    real   grplfrc550  ij  misc    1  -   h{8}   "GRPLFR550"       "Graupel Fraction of Tot Condensate at 550 mb"    "%"
+state    real   grplfrc600  ij  misc    1  -   h{8}   "GRPLFR600"       "Graupel Fraction of Tot Condensate at 600 mb"    "%"
+state    real   grplfrc650  ij  misc    1  -   h{8}   "GRPLFR650"       "Graupel Fraction of Tot Condensate at 650 mb"    "%"
+state    real   grplfrc700  ij  misc    1  -   h{8}   "GRPLFR700"       "Graupel Fraction of Tot Condensate at 700 mb"    "%"
+state    real   grplfrc750  ij  misc    1  -   h{8}   "GRPLFR750"       "Graupel Fraction of Tot Condensate at 750 mb"    "%"
+state    real   grplfrc800  ij  misc    1  -   h{8}   "GRPLFR800"       "Graupel Fraction of Tot Condensate at 800 mb"    "%"
+state    real   grplfrc850  ij  misc    1  -   h{8}   "GRPLFR850"       "Graupel Fraction of Tot Condensate at 850 mb"    "%"
+state    real   grplfrc900  ij  misc    1  -   h{8}   "GRPLFR900"       "Graupel Fraction of Tot Condensate at 900 mb"    "%"
+state    real   grplfrc950  ij  misc    1  -   h{8}   "GRPLFR950"       "Graupel Fraction of Tot Condensate at 950 mb"    "%"
+state    real   grplfrc1000 ij  misc    1  -   h{8}   "GRPLFR1000"      "Graupel Fraction of Tot Condensate at 1000 mb"   "%"
+#
+# (14) Absolute Vorticity
+#
+state    real   avor050  ij  misc       1  -   h{8}   "AVOR050"         "Absolute vorticity, at 50 mb"                    "1/S"
+state    real   avor100  ij  misc       1  -   h{8}   "AVOR100"         "Absolute vorticity, at 100 mb"                   "1/S"
+state    real   avor150  ij  misc       1  -   h{8}   "AVOR150"         "Absolute vorticity, at 150 mb"                   "1/S"
+state    real   avor200  ij  misc       1  -   h{8}   "AVOR200"         "Absolute vorticity, at 200 mb"                   "1/S"
+##state    real   avor250  ij  misc "     1  -   h{8}   "AVOR250"         "Absolute vorticity, at 250 mb"                   "1/S
+state    real   avor300  ij  misc       1  -   h{8}   "AVOR300"         "Absolute vorticity, at 300 mb"                   "1/S"
+state    real   avor350  ij  misc       1  -   h{8}   "AVOR350"         "Absolute vorticity, at 350 mb"                   "1/S"
+state    real   avor400  ij  misc       1  -   h{8}   "AVOR400"         "Absolute vorticity, at 400 mb"                   "1/S"
+state    real   avor450  ij  misc       1  -   h{8}   "AVOR450"         "Absolute vorticity, at 450 mb"                   "1/S"
+##state    real   avor500  ij  misc "     1  -   h{8}   "AVOR500"         "Absolute vorticity, at 500 mb"                   "1/S"
+state    real   avor550  ij  misc       1  -   h{8}   "AVOR550"         "Absolute vorticity, at 550 mb"                   "1/S"
+state    real   avor600  ij  misc       1  -   h{8}   "AVOR600"         "Absolute vorticity, at 600 mb"                   "1/S"
+state    real   avor650  ij  misc       1  -   h{8}   "AVOR650"         "Absolute vorticity, at 650 mb"                   "1/S"
+##state    real   avor700  ij  misc "     1  -   h{8}   "AVOR700"         "Absolute vorticity, at 700 mb"                   "1/S"
+state    real   avor750  ij  misc       1  -   h{8}   "AVOR750"         "Absolute vorticity, at 750 mb"                   "1/S"
+state    real   avor800  ij  misc       1  -   h{8}   "AVOR800"         "Absolute vorticity, at 800 mb"                   "1/S"
+##state    real   avor850  ij  misc "     1  -   h{8}   "AVOR850"         "Absolute vorticity, at 850 mb"                   "1/S"
+state    real   avor900  ij  misc       1  -   h{8}   "AVOR900"         "Absolute vorticity, at 900 mb"                   "1/S"
+state    real   avor950  ij  misc       1  -   h{8}   "AVOR950"         "Absolute vorticity, at 950 mb"                   "1/S"
+state    real   avor1000 ij  misc       1  -   h{8}   "AVOR1000"        "Absolute vorticity, at 1000 mb"                  "1/S"
+#
+# (15) Potential Vorticity
+#
+state    real   pvor050  ij  misc       1  -   h{8}   "PVOR050"       "Potential vorticity at 50 mb:  1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor100  ij  misc       1  -   h{8}   "PVOR100"       "Potential vorticity at 100 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor150  ij  misc       1  -   h{8}   "PVOR150"       "Potential vorticity at 150 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor200  ij  misc       1  -   h{8}   "PVOR200"       "Potential vorticity at 200 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor250  ij  misc       1  -   h{8}   "PVOR250"       "Potential vorticity at 250 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor300  ij  misc       1  -   h{8}   "PVOR300"       "Potential vorticity at 300 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor350  ij  misc       1  -   h{8}   "PVOR350"       "Potential vorticity at 350 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor400  ij  misc       1  -   h{8}   "PVOR400"       "Potential vorticity at 400 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor450  ij  misc       1  -   h{8}   "PVOR450"       "Potential vorticity at 450 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor500  ij  misc       1  -   h{8}   "PVOR500"       "Potential vorticity at 500 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor550  ij  misc       1  -   h{8}   "PVOR550"       "Potential vorticity at 550 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor600  ij  misc       1  -   h{8}   "PVOR600"       "Potential vorticity at 600 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor650  ij  misc       1  -   h{8}   "PVOR650"       "Potential vorticity at 650 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor700  ij  misc       1  -   h{8}   "PVOR700"       "Potential vorticity at 700 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor750  ij  misc       1  -   h{8}   "PVOR750"       "Potential vorticity at 750 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor800  ij  misc       1  -   h{8}   "PVOR800"       "Potential vorticity at 800 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor850  ij  misc       1  -   h{8}   "PVOR850"       "Potential vorticity at 850 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor900  ij  misc       1  -   h{8}   "PVOR900"       "Potential vorticity at 900 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor950  ij  misc       1  -   h{8}   "PVOR950"       "Potential vorticity at 950 mb: 1E-6*m2s-1*K*kg-1"  "PVU"
+state    real   pvor1000 ij  misc       1  -   h{8}   "PVOR1000"      "Potential vorticity at 1000 mb:1E-6*m2s-1*K*kg-1"  "PVU"
+#
+state    real   zpvor1_5  ij  misc       1  -   h{8}  "ZPVOR1_5"       "Height above MSL of the 1.5PVU surface"            "M"
+state    real   zpvor2_0  ij  misc       1  -   h{8}  "ZPVOR2_0"       "Height above MSL of the 2.0PVU surface"            "M"
+state    real   tpvor1_5  ij  misc       1  -   h{8}  "TPVOR1_5"       "Potential Temperature of the 1.5PVU surface"       "K"
+state    real   tpvor2_0  ij  misc       1  -   h{8}  "TPVOR2_0"       "Potential Temperature of the 2.0PVU surface"       "K"
+
+# Additional Surface Variables
+#
+## TA2: defined above
+## TDEW2: defined above
+## RH2: defined above
+## QV2: defined above
+## WSPD10: defined above
+state    real   wdir_10   ij   misc    1  -   h{8}   "WDIR10"     "Wind-direction at 10-meters clockwise-from-north"      "Degrees" 
+## Standard Precipitation: defined above
+state    real   ratotlcum  ij  misc    1  - rh0{8}   "PCPTOTAL_CUM" "accumulated total (conv + non-conv) PCP (all types)" "mm"
+state    real   rafrzn    ij   misc    1  -   h{8}   "PCPFROZEN" "htr_tstep total (conv+non-conv) frozen PCP (all types)" "mm"
+state    real   rafrzncum ij   misc    1  -   h{8}   "PCPFRZN_CUM" "accumulated total (conv + non-conv) frozen PCP"       "mm"
+state    real   rafrznfr    ij misc    1  -   h{8}   "PCPFRZNFR" "htr_tstep tot fraction of frozen PCP (all types)"       "mm"
+state    real   rafrzncumfr ij misc    1  -   h{8}   "PCPFRZNFR_CUM" "accum total fraction of frozen PCP (all types)"     "mm"
+state    real   dryairmtot  ij misc    1  -   h{8}   "DRYAIRM_TOT"  "Total Dry Air Mass in Column (base+pert)"            "Pa"
+## Some additional vars saved in h8 by modifying Registry.EM_COMMON
+state    real   pressfc     ij misc    1  -   h{8}   "PRES2"        "Atmospheric Pressure at 2m"                          "Pa"
+
+## MSLP; SPECHUM2; REFL defined above
+## CAWO End
+##
+state    real   icgpot35   ij   misc    1  -   h{8}   "ICGPOTFL350" "Aircraft Icing Potential at Flight-level 35000ft"    "None"
+state    real   sldpot35   ij   misc    1  -   h{8}   "SLDPOTFL350" "Supercooled Large Droplet Potential at FL 35000ft"   "None"
+state    real   icgpot30   ij   misc    1  -   h{8}   "ICGPOTFL300" "Aircraft Icing Potential at Flight-level 30000ft"    "None"
+state    real   sldpot30   ij   misc    1  -   h{8}   "SLDPOTFL300" "Supercooled Large Droplet Potential at FL 30000ft"   "None"
+state    real   icgpot25   ij   misc    1  -   h{8}   "ICGPOTFL250" "Aircraft Icing Potential at Flight-level 25000ft"    "None"
+state    real   sldpot25   ij   misc    1  -   h{8}   "SLDPOTFL250" "Supercooled Large Droplet Potential at FL 25000ft"   "None"
+state    real   icgpot20   ij   misc    1  -   h{8}   "ICGPOTFL200" "Aircraft Icing Potential at Flight-level 20000ft"    "None"
+state    real   sldpot20   ij   misc    1  -   h{8}   "SLDPOTFL200" "Supercooled Large Droplet Potential at FL 20000ft"   "None"
+state    real   icgpot15   ij   misc    1  -   h{8}   "ICGPTMSL150" "Aircraft Icing Potential at 15000ft abv MSL"         "None"    
+state    real   sldpot15   ij   misc    1  -   h{8}   "SLDPTMSL150" "Supercooled Large Droplet Potential 15000ft abv MSL" "None"    
+state    real   icgpot10   ij   misc    1  -   h{8}   "ICGPTMSL100" "Aircraft Icing Potential at 10000ft abv MSL"         "None"
+state    real   sldpot10   ij   misc    1  -   h{8}   "SLDPTMSL100" "Supercooled Large Droplet Potential 10000ft abv MSL" "None"    
+state    real   icgpot05   ij   misc    1  -   h{8}   "ICGPTMSL050" "Aircraft Icing Potential at 5000ft abv MSL"          "None"       
+state    real   sldpot05   ij   misc    1  -   h{8}   "SLDPTMSL050" "Supercooled Large Droplet Potential 5000ft abv MSL"  "None"
+state    real   icgpot01   ij   misc    1  -   h{8}   "ICGPTMSL010" "Aircraft Icing Potential at 1000ft abv MSL"          "None"    
+state    real   sldpot01   ij   misc    1  -   h{8}   "SLDPTMSL010" "Supercooled Large Droplet Potential 1000ft abv MSL"  "None"
+##
+state    real   turbdx01   ij   misc    1  -   h{8}   "TURBDX_LAY1" "CAT Turb Index 1500-3000M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr"   "None"  
+state    real   turbdx02   ij   misc    1  -   h{8}   "TURBDX_LAY2" "CAT Turb Index 3000-4600M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr"   "None"  
+state    real   turbdx03   ij   misc    1  -   h{8}   "TURBDX_LAY3" "CAT Turb Index 4600-6100M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr"   "None"  
+state    real   turbdx04   ij   misc    1  -   h{8}   "TURBDX_LAY4" "CAT Turb Index 6100-7600M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr"   "None"  
+state    real   turbdx05   ij   misc    1  -   h{8}   "TURBDX_LAY5" "CAT Turb Index 7600-9100M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr"   "None"  
+state    real   turbdx06   ij   misc    1  -   h{8}   "TURBDX_LAY6" "CAT Turb Index 9100-10700M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr"  "None"  
+state    real   turbdx07   ij   misc    1  -   h{8}   "TURBDX_LAY7" "CAT Turb Index 10700-12700M AGL: 4-8:Lght-Mod;8-12:Mod;>12 Svr" "None"
+state    real   llturb     ij   misc    1  -   h{8}   "LLTURB_DEX"  "Turb Index 0-1500m AGL (4 ingredient); not directly comparable to PIREPS" "None"
+state    real   llturblgt  ij   misc    1  -   h{8}   "LLTURBLGT"   "Prob. of light-LLTURB eq_or_exceeding PIREP class for light turb"       "%"
+state    real   llturbmdt  ij   misc    1  -   h{8}   "LLTURBMDT"   "Prob. of moderate-LLTURB eq_or_exceeding PIREP class for moderate turb" "%"
+state    real   llturbsvr  ij   misc    1  -   h{8}   "LLTURBSVR"   "Prob. of svr-LLTURB eq_or_exceeding PIREP class for svr turb"           "%"
+state    real   fits       ij   misc    1  -   h{8}   "FIGTERDEX"   "Fighter Index of Thermal Stress"                     "K"
+state    real   llws       ij   misc    1  -   h{8}   "LLWS"        "0-2000 ft wind shear"                                "M/S"
+##
+state    real   wbfrzlev   ij   misc    1  -   h{8}   "WETBFZAGL"   "Elevation above ground-level where wet-bulb temp=0C"  "M"
+state    real   apta2c     ij   misc    1  -   h{8}   "APTEMPC"     "Apparent temp (wind chill or heat index) at 2meters"  "C"
+state    real   qv2        ij   misc    1  -   h{8}   "QV2"         "Water Vapor Mixing Ratio at 2meters"                  "kg/kg"
+state    real   spechumd   ij   misc    1  -   h{8}   "SPECHUM2"    "Specific Humidity at 2meters"                         "kg/kg"
+state    real   soiltlay1  ij   misc    1  -   h{8}   "SOILTLAY1"   "Ave. Soil Temperature in Top Soil Layer"              "C"
+state    real   smrellay1  ij   misc    1  -   h{8}   "SMRELLAY1"   "Frac Soil Mois; Top Soil Lay; Abve Plant Wilt Point"  "%"
+state    real   smreltot   ij   misc    1  -   h{8}   "SMRELTOTL"   "Frac Soil Mois; All-Soil-Lays; Abv Plant Wilt Point"  "%"
+##
+state    real   rain_last   ij   misc    1  -  r      "RAIN_LAST" "Last HTR tstep accum total (conv + non-conv) rain"      "mm"
+state    real   radcv_last  ij   misc    1  -  r      "RADCV_LAST" "Last HTR tstep accum total convective rain"            "mm" 
+state    real   rascv_last  ij   misc    1  -  r      "RASCV_LAST" "Last HTR tstep accum total shallow convective rain"    "mm"
+state    real   rannc_last  ij   misc    1  -  r      "RANNC_LAST" "Last HTR tstep accum total non-convective rain"        "mm"
+state    real   sn_nc_last  ij   misc    1  -  r      "SN_NC_LAST" "Last HTR tstep accum total non-convective snow"        "mm"
+state    real   gr_nc_last  ij   misc    1  -  r      "GR_NC_LAST" "Last HTR tstep accum total non-convective graupel"     "mm"
+#
+state    real   lq_nc_last  ij   misc    1  -  r      "LQ_NC_LAST" "Last HTR tstep accum total non-convective liq ppt @ sfc "   "mm"
+state    real   sn_cv_last  ij   misc    1  -
+state    real   gr_cv_last  ij   misc    1  -
+state    real   lq_cv_last  ij   misc    1  -
+state    real   snowcv      ij   misc    1  -  r      "SN_CV_LAST" "Last HTR tstep accum cvctv tot snow/cld-ice at surface"  "mm"
+state    real   graupelcv   ij   misc    1  -  r      "GR_CV_LAST" "Last HTR tstep accum cvctv tot graupel (sleet/sn-pllts)" "mm"
+state    real   liquidcv    ij   misc    1  -  r      "LQ_CV_LAST" "Last HTR tstep accum cvctv tot liq ppt @ sfc "           "mm"
+state integer   cu_act_last ij   misc    1  -  r      "CU_ACT_LAST" "Was a CP scheme cloud active w/in last outpt tstep"   "None"
+state    real   cu_top_last ij   misc    1  -  r      "CU_TOP_LAST" "Last HTR tstep Top of param cumulus cloud, if any"   "M"
+state    real   cu_bot_last ij   misc    1  -  r      "CU_BOT_LAST" "Last HTR tstep Bottom of param cu cloud, if any "    "M"
+#
+state integer   cu_ishall   ij   misc    1  -  r      "CU_SHALL"   "Cu:none(-1),shall(1),deep(0) w/in this HTR stp"       "None"
+state integer   cu_ish_last ij   misc    1  -  r      "CUISH_LAST" "Cu:none(-1),shall(1),deep(0) w/in LAST HTR stp"       "None"
+state    real   cu_ctt_last ij   misc    1  -  r      "CU_CTT_LAST" "Cu cloud top temperature w/in LAST HTR stp, if any"  "K" 
+state    real   cu_ktop_lst ij   misc    1  -  r      "CU_KTOP_LAST"  "Cu top K when CP actv w/in LAST HTR tstep:restart" "None"
+state    real   cu_kbot_lst ij   misc    1  -  r      "CU_KBOT_LAST"  "Cu bot K when CP actv w/in LAST HTR tstep:restart" "None"
+state    real   cu_ktop     ij   misc    1  -  r      "CU_KTOP"  "Cu top K when CP actv w/in this HTR tstep:restart"      "None"
+state    real   cu_kbot     ij   misc    1  -  r      "CU_KBOT"  "Cu bot K when CP actv w/in this HTR tstep:restart"      "None"
+state    real   cutop_acc   ij   misc    1  -  r      "CUTOP_ACC" "Accumultor for cvctv cld tops btwn HTR outstps, K-lev" "None"
+state    real   cubot_acc   ij   misc    1  -  r      "CUBOT_ACC" "Accumultor for cvctv cld bots btwn HTR outstps, K-lev" "None"
+state    real   rainc_acc   ij   misc    1  -  r      "RAINC_ACC" "Accumultor for cvctv pcp btwn HTR outstps,for restart" "MM"  
+#
+state integer   nclds_acc   ij   misc    1  -  r      "NCLDS_ACC" "Accumultor for nmbr of cv clds btwn HTR outstps"       "None"
+state    real   chmin_acc   ij   misc    1  -      
+state    real   cu_chmin    ij   misc    1  -
+state    real   kf_chm_last ij   misc    1  -  r      "KF_CHM_LAST"  "Min depth of KF cloud bridging this HTR tstp:rstrt"  "Meters"
+state    real   kf_top_last ij   misc    1  -  r      "KF_TOP_LAST"  "Cu top K when KF cld bridging this HTR tstep:rstrt"  "None"
+state    real   kf_bot_last ij   misc    1  -  r      "KF_BOT_LAST"  "Cu bot K when KF cld bridging this HTR tstep:rstrt"  "None"
+state logical   cu_exp_flag ij   misc    1  -  r      "CU_EXP_FLAG"  "False: a cloud will bridge the HTR outstep: rstrt"   "None"
+state    real   nxtsecs_htr -    misc    1  -   
+state logical   jstcald_htr -    misc    1  -
+state    real   kf_initsecs ij   misc    1  -  r      "KFINITSECS"  "Init time for KF cloud when bridging this HTR stp:restart" "None"
+#
+state    real   kf_exprsecs ij   misc    1  -  r      "KFEXPRSECS"  "Expire tim for KF cloud when bridging this HTR stp:restart" "None"
+state    real   refl_htrgen ikj  misc    1  -
+state    real   relvort     ikj  misc    1  -
+
+#  Package declarations
+
+package   skip_press_diags      p_lev_diags==0     -        -
+package        press_diags      p_lev_diags==1     -        state:p_pl,u_pl,v_pl,t_pl,rh_pl,ght_pl,s_pl,td_pl,q_pl,twet1,twmean,maskfrac,/
+qclay1,qilay1,qrlay1,qslay1,qglay1,qnilay1,rain,qv_col,raliqd,rafzra,rasnow,raicep,raliqdcum,rafzracum,rasnowcum,dysnowcum,dysnratcu,raicepcum,/
+rain_rate,radcv_rate,prate_inst,rascv_rate,rannc_rate,sn_nc_rate,gr_nc_rate,lq_nc_rate,sn_cv_rate,gr_cv_rate,lq_cv_rate,cnvresmask,talay1,tnsfc,/
+ta2,apta2,tdew2,rh2,tw2,twbgt2,tdsig1,ux10,vx10,wspd10,gspd10,slprs,cfraclo,cfracmd,cfrachi,z1000,snolev,mixlev,frzlev,z850,z700,z500,z300,z250,/
+uwind850,vwind850,avor850,rh850,ta850,uwind700,vwind700,wwind700,wdir_700,avor700,rh700,ta700,thtae700,uwind500,vwind500,avor500,rh500,ta500,/
+uwind300,vwind300,rh300,ta300,wdir_300,wspd300,uwind250,vwind250,wspd250,wdir_250,avor250,rh250,ta250,dz1000_850,dz1000_500,dz850_700,snodpt,/
+rfl_1kmagl,rfl_maxagl,rfl_mxcagl,rflmpsc1km,rflmpscmax,etp_18dbz,etp_mpsc,vilh,radarvilh,icflrateprhr,cgflrateprhr,totflrteprhr,cfractot,/
+mucape,cinh,mlcape,cinm,sbcape,cins,srh0_1km,srh0_3km,ehi_1km,ehi_3km,visib,ceiling,flghtreg,fogflag,ptyp_fip,ptyp_cat,cat_rain,cat_fzrn,/
+cat_icep,cat_snow,cu_activ,cu_top_m,cu_bot_m,cu_top_ta,uphelmax,wspd10mx,afw_hail,afw_torn,icgpot45,sldpot45,icgpot40,sldpot40,icgpot35,/
+sldpot35,icgpot30,sldpot30,icgpot25,sldpot25,icgpot20,sldpot20,icgpot15,sldpot15,icgpot10,sldpot10,sldpot05,icgpot05,sldpot01,icgpot01,/
+turbdx01,turbdx02,turbdx03,turbdx04,turbdx05,turbdx06,turbdx07,llturb,llturblgt,llturbmdt,llturbsvr,fits,llws,wbfrzlev,apta2c,qv2,spechumd,/
+soiltlay1,smrellay1,smreltot,rain_last,radcv_last,rascv_last,rannc_last,sn_nc_last,gr_nc_last,lq_nc_last,sn_cv_last,gr_cv_last,lq_cv_last,/
+snowcv,graupelcv,liquidcv,cu_act_last,cu_top_last,cu_bot_last,cu_ishall,cu_ish_last,cu_ctt_last,cu_ktop_lst,cu_kbot_lst,cu_ktop,cu_kbot,/
+cutop_acc,cubot_acc,rainc_acc,nclds_acc,chmin_acc,cu_chmin,kf_chm_last,kf_top_last,kf_bot_last,cu_exp_flag,nxtsecs_htr,jstcald_htr,kf_initsecs,/
+kf_exprsecs,refl_htrgen,relvort,/
+ta050,ta100,ta150,ta200,ta350,ta400,ta450,ta550,ta600,ta650,ta750,ta800,ta900,ta950,ta1000,/
+td050,td100,td150,td200,td250,td300,td350,td400,td450,td500,td550,td600,td650,td700,td750,td800,td850,td900,td950,td1000,/
+rh050,rh100,rh150,rh200,rh350,rh400,rh450,rh550,rh600,rh650,rh750,rh800,rh900,rh950,rh1000,/
+qv050,qv100,qv150,qv200,qv250,qv300,qv350,qv400,qv450,qv500,qv550,qv600,qv650,qv700,qv750,qv800,qv850,qv900,qv950,qv1000,/
+wspd050,wspd100,wspd150,wspd200,wspd350,wspd400,wspd450,wspd500,wspd550,wspd600,wspd650,wspd750,wspd800,wspd850,wspd900,wspd950,wspd1000,/
+w_dir050,w_dir100,w_dir150,w_dir200,w_dir350,w_dir400,w_dir450,w_dir500,w_dir550,w_dir600,w_dir650,w_dir750,w_dir800,w_dir850,w_dir900,w_dir950,w_dir1000,/
+theta050,theta100,theta150,theta200,theta250,theta300,theta350,theta400,theta450,theta500,theta550,theta600,theta650,theta700,theta750,theta800,theta850,theta900,theta950,theta1000,/
+z050,z100,z150,z200,z350,z400,z450,z550,z600,z650,z750,z800,z900,z950,/
+wwind050,wwind100,wwind150,wwind200,wwind250,wwind300,wwind350,wwind400,wwind450,wwind500,wwind550,wwind600,wwind650,wwind750,wwind800,wwind850,wwind900,wwind950,wwind1000,/
+clconfrc050,clconfrc100,clconfrc150,clconfrc200,clconfrc250,clconfrc300,clconfrc350,clconfrc400,clconfrc450,clconfrc500,clconfrc550,clconfrc600,clconfrc650,clconfrc700,clconfrc750,clconfrc800,clconfrc850,clconfrc900,clconfrc950,clconfrc1000,/
+rnwatfrc050,rnwatfrc100,rnwatfrc150,rnwatfrc200,rnwatfrc250,rnwatfrc300,rnwatfrc350,rnwatfrc400,rnwatfrc450,rnwatfrc500,rnwatfrc550,rnwatfrc600,rnwatfrc650,rnwatfrc700,rnwatfrc750,rnwatfrc800,rnwatfrc850,rnwatfrc900,rnwatfrc950,rnwatfrc1000,/
+snowfrc050,snowfrc100,snowfrc150,snowfrc200,snowfrc250,snowfrc300,snowfrc350,snowfrc400,snowfrc450,snowfrc500,snowfrc550,snowfrc600,snowfrc650,snowfrc700,snowfrc750,snowfrc800,snowfrc850,snowfrc900,snowfrc950,snowfrc1000,/
+grpl050,grpl100,grpl150,grpl200,grpl250,grpl300,grpl350,grpl400,grpl450,grpl500,grpl550,grpl600,grpl650,grpl700,grpl750,grpl800,grpl850,grpl900,grpl950,grpl1000,/
+avor050,avor100,avor150,avor200,avor300,avor350,avor400,avor450,avor550,avor600,avor650,avor750,avor800,avor900,avor950,avor1000,/
+pvor050,pvor100,pvor150,pvor200,pvor250,pvor300,pvor350,pvor400,pvor450,pvor500,pvor550,pvor600,pvor650,pvor700,pvor750,pvor800,pvor850,pvor900,pvor950,pvor1000,/
+zpvor1_5,zpvor2_0,tpvor1_5,tpvor2_0,wdir_10,rafrzn,rafrzncum,rafrznfr,rafrzncumfr,dryairmtot,pressfc,/
+tcondwat050,tcondwat100,tcondwat150,tcondwat200,tcondwat250,tcondwat300,tcondwat350,tcondwat400,tcondwat450,/
+tcondwat500,tcondwat550,tcondwat600,tcondwat650,tcondwat700,tcondwat750,tcondwat800,tcondwat850,tcondwat900,/
+tcondwat950,tcondwat1000,ratotlcum,/
+wdir_pl,thta_pl,wwnd_pl,tcon_pl,cconfr_pl,rnwtfr_pl,snowfr_pl,graufr_pl,avor_pl,pvor_pl
+
+#	HEIGHT and AGL
+
+#  The new dimspec.  We need to have the number of height levels to interpolate to.
+
+dimspec    nz      2     namelist=num_z_levels             z     num_z_levels
+
+#  Namelist parameters
+
+rconfig   integer     z_lev_diags         namelist,diags   1            0   -    "flag to process vertical interp diagnostics: 0=nope, 1=yep" "flag"
+rconfig   integer     z_lev_diags_dfi     namelist,diags   1            0   -    "when doing z_level diags and dfi, turn off diags during 'non forecast'"
+rconfig   integer     num_z_levels        namelist,diags   1            0   -    "number of height levels to interpolate diagnostics to"    "index"
+rconfig   real            z_levels        namelist,diags   max_zlevs    0   -    "array of height levels to interpolate diagnostics to"     "m"
+rconfig   real        z_lev_missing       namelist,diags   1         -999   -    "missing values below ground, no extrapolation"              "constant"
+
+#  Derived, this is interval in seconds that is from auxhist22 interval, computed in check_a_mundo
+
+rconfig   real        z_lev_interval      derived          max_domains  0   -    "interval to compute/output z level diags"                   "s"
+
+#  Arrays that will be filled with interpolated values
+
+state    real   z_zl    {nz}    misc    1  Z   h{22}  "Z_ZL"    "Height level data, Height"                "m"
+state    real   u_zl   i{nz}j   misc    1  Z   h{22}  "U_ZL"    "Height level data, U wind"                "m s-1"
+state    real   v_zl   i{nz}j   misc    1  Z   h{22}  "V_ZL"    "Height level data, V wind"                "m s-1"
+state    real   t_zl   i{nz}j   misc    1  Z   h{22}  "T_ZL"    "Height level data, Temperature"           "K"
+state    real   rh_zl  i{nz}j   misc    1  Z   h{22}  "RH_ZL"   "Height level data, Relative humidity"     "%"
+state    real   ght_zl i{nz}j   misc    1  Z   h{22}  "GHT_ZL"  "Height level data, Geopotential Height"   "m"
+state    real   s_zl   i{nz}j   misc    1  Z   h{22}  "S_ZL"    "Height level data, Speed"                 "m s-1"
+state    real   td_zl  i{nz}j   misc    1  Z   h{22}  "TD_ZL"   "Height level data, Dew point temperature" "K"
+state    real   q_zl   i{nz}j   misc    1  Z   h{22}  "Q_ZL"    "Height level data, Mixing ratio"          "kg/kg"
+
+#  Package declarations
+
+package   skip_z_diags      z_lev_diags==0     -        -
+package        z_diags      z_lev_diags==1     -        state:z_zl,u_zl,v_zl,t_zl,rh_zl,ght_zl,s_zl,td_zl,q_zl
