@@ -1,0 +1,13 @@
+# Extracted COAWST source (from the scratch tarball; never commit)
+/coawst/
+/coawst_*/
+
+# Build products
+/binaries/*/coawstM
+/binaries/*/build_info.txt
+/logs/
+
+# Editor / OS noise
+*~
+*.swp
+.DS_Store
