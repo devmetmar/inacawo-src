@@ -9,8 +9,9 @@
 #   binaries/ramp_tides/coawstM      binaries/no_ramp_tides/coawstM
 #
 # Usage:
-#   bash build_coawst.bash --sbatch                    # recommended: one HDCAST job per variant
+#   bash build_coawst.bash --sbatch                    # recommended: one job per variant
 #                                                      # (1 node / 96 cores each, run in parallel)
+#                                                      # partition: HDCAST if account allowed, else DEV1
 #   bash build_coawst.bash --sbatch --variant no_ramp_tides
 #   bash build_coawst.bash [-j N] [--variant ...]      # run in the current shell / job (sequential)
 #
@@ -30,8 +31,10 @@ VARIANT="all"
 JOBS="${SLURM_NTASKS:-96}"
 SBATCH=0
 FORCE_EXTRACT=0
-PARTITION="HDCAST"
+PARTITION_ARG=""   # empty → auto (HDCAST if allowed, else DEV1)
 TIME_LIMIT="01:00:00"
+PREFERRED_PARTITION="${IHT_SLURM_PARTITION_PREFERRED:-HDCAST}"
+FALLBACK_PARTITION="${IHT_SLURM_PARTITION_FALLBACK:-DEV1}"
 
 usage() {
   cat <<EOF
@@ -41,7 +44,8 @@ Options:
   --variant V        ramp_tides | no_ramp_tides | all   (default: all)
   -j N               parallel make jobs (default: \$SLURM_NTASKS or 96)
   --sbatch           submit one SLURM job per variant (1 node, 96 tasks, exclusive each)
-  --partition P      SLURM partition for --sbatch (default: ${PARTITION})
+  --partition P      SLURM partition for --sbatch
+                     (default: auto — ${PREFERRED_PARTITION} if account allowed, else ${FALLBACK_PARTITION})
   --time T           SLURM time limit per job for --sbatch (default: ${TIME_LIMIT})
   --tarball PATH     COAWST source tarball (default: ${TARBALL})
   --force-extract    remove ./coawst_<variant> and extract the tarball again
@@ -60,7 +64,7 @@ while [[ $# -gt 0 ]]; do
     --variant)   VARIANT="${2:?--variant needs a value}"; shift ;;
     -j)          JOBS="${2:?-j needs a value}"; shift ;;
     --sbatch)    SBATCH=1 ;;
-    --partition) PARTITION="${2:?--partition needs a value}"; shift ;;
+    --partition) PARTITION_ARG="${2:?--partition needs a value}"; shift ;;
     --time)      TIME_LIMIT="${2:?--time needs a value}"; shift ;;
     --tarball)   TARBALL="${2:?--tarball needs a path}"; shift ;;
     --force-extract) FORCE_EXTRACT=1 ;;
@@ -79,6 +83,61 @@ esac
 now_s() { date +%s; }
 fmt_elapsed() { printf '%dm%02ds' "$(($1 / 60))" "$(($1 % 60))"; }
 
+# ---- Slurm partition: HDCAST if account allowed, else DEV1 (avoids PENDING PartitionConfig) ----
+_src_user_slurm_accounts() {
+  if command -v sacctmgr >/dev/null 2>&1; then
+    sacctmgr -n show associations where user="${USER}" format=Account -P 2>/dev/null \
+      | awk -F'|' 'NF && $1 != "" {print $1}' | sort -u
+  fi
+}
+
+_src_partition_allow_accounts() {
+  local part="$1" line
+  line="$(scontrol show partition "${part}" -o 2>/dev/null || true)"
+  [[ -n "${line}" ]] || return 1
+  if [[ "${line}" =~ AllowAccounts=([^ ]+) ]]; then
+    echo "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  echo "ALL"
+}
+
+_src_account_allowed_on_partition() {
+  local part="$1" allow a uacc
+  allow="$(_src_partition_allow_accounts "${part}" || true)"
+  [[ -n "${allow}" ]] || return 1
+  [[ "${allow}" == "ALL" ]] && return 0
+  while IFS= read -r uacc; do
+    [[ -z "${uacc}" ]] && continue
+    IFS=',' read -r -a _allowed <<< "${allow}"
+    for a in "${_allowed[@]}"; do
+      [[ "${uacc}" == "${a}" ]] && return 0
+    done
+  done < <(_src_user_slurm_accounts)
+  return 1
+}
+
+# Sets PARTITION + _PARTITION_SOURCE (must not run in a subshell).
+_src_resolve_slurm_partition() {
+  if [[ -n "${PARTITION_ARG}" ]]; then
+    _PARTITION_SOURCE="cli"
+    PARTITION="${PARTITION_ARG}"
+  elif [[ -n "${IHT_SLURM_PARTITION:-}" ]]; then
+    _PARTITION_SOURCE="env"
+    PARTITION="${IHT_SLURM_PARTITION}"
+  else
+    _PARTITION_SOURCE="auto"
+    if command -v scontrol >/dev/null 2>&1 \
+       && _src_account_allowed_on_partition "${PREFERRED_PARTITION}"; then
+      PARTITION="${PREFERRED_PARTITION}"
+    else
+      PARTITION="${FALLBACK_PARTITION}"
+    fi
+  fi
+  export IHT_SLURM_PARTITION="${PARTITION}"
+  export SBATCH_PARTITION="${PARTITION}"
+}
+
 mkdir -p "${LOG_DIR}"
 
 # ---- submit to SLURM: one job per variant, same resources as slurm_compile_cawo.bash ----
@@ -88,13 +147,25 @@ if [[ "${SBATCH}" -eq 1 ]]; then
     echo "ERROR: sbatch not found" >&2
     exit 1
   fi
+  _src_resolve_slurm_partition
+  case "${_PARTITION_SOURCE}" in
+    cli) echo "==> partition=${PARTITION} (--partition)" ;;
+    env) echo "==> partition=${PARTITION} (IHT_SLURM_PARTITION)" ;;
+    *)
+      if [[ "${PARTITION}" == "${FALLBACK_PARTITION}" ]]; then
+        echo "==> partition=${PARTITION} (auto: no Slurm account on ${PREFERRED_PARTITION} → fallback)"
+      else
+        echo "==> partition=${PARTITION} (auto: account allowed on ${PREFERRED_PARTITION})"
+      fi
+      ;;
+  esac
   pass=()
   skip=0
   for a in "${ARGS[@]}"; do
     if [[ "${skip}" -eq 1 ]]; then skip=0; continue; fi
     case "${a}" in
       --sbatch) ;;
-      --variant) skip=1 ;;
+      --variant|--partition) skip=1 ;;
       *) pass+=("${a}") ;;
     esac
   done

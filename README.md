@@ -87,10 +87,12 @@ bash build_coawst.bash -j 16                              # run in current shell
 bash build_coawst.bash --help
 ```
 
-Each `--sbatch` job uses the same resources as the original
-`slurm_compile_cawo.bash`: `--partition=HDCAST --nodes=1 --ntasks-per-node=96
---exclusive`, default time limit `01:00:00`. `make -j` defaults to
-`$SLURM_NTASKS` (96); WRF's own build is capped at `-j 20`.
+Each `--sbatch` job uses `--nodes=1 --ntasks-per-node=96 --exclusive`,
+default time limit `01:00:00`. Partition defaults to **auto**: `HDCAST` if
+your Slurm account is in that partition’s `AllowAccounts`, otherwise `DEV1`
+(avoids stuck `PENDING (PartitionConfig)`). Override with `--partition NAME`
+or `IHT_SLURM_PARTITION`. `make -j` defaults to `$SLURM_NTASKS` (96); WRF's
+own build is capped at `-j 20`.
 
 ### Why it takes ~30 minutes, and why more nodes don't help
 
