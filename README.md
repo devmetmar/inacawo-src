@@ -47,11 +47,19 @@ source tarball.
 
 ## Quick start (participants)
 
-This is step 3 of the shared setup. Step 2 is
-`bash ~/inacawo-deps/install_hindcast_env.bash` (COAWST libraries in `~/apps`).
+This is step 3 of the shared setup. Step 2 is the deps installer (libraries in
+`~/apps`, then the conda env). `--offline` still installs those libraries; it
+only skips conda downloads and uses the shared `hindcast` env:
+
+```bash
+bash ~/inacawo-deps/install_hindcast_env.bash             # online: private env
+bash ~/inacawo-deps/install_hindcast_env.bash --offline   # shared env, no downloads
+```
+
 Do not `conda activate hindcast` for this build: `build_coawst.bash` sources
 `inacawo-deps/env` and `COAWST_ENV` itself. After the binaries exist, daily
-work is `source ~/inacawo-iht/setup_env.bash`.
+work is `source ~/inacawo-iht/setup_env.bash`. Other installer flags are in
+the inacawo-deps README.
 
 ```bash
 cd $HOME/inacawo-src
