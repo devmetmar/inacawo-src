@@ -8,9 +8,9 @@ on shared scratch, and every participant compiles their own `coawstM`.
 
 | Directory | Repo | Content |
 |---|---|---|
-| `~/inacawo-deps` (+ `~/apps`) | [devmetmar/inacawo-deps](https://github.com/devmetmar/inacawo-deps) | conda env, LO, COAWST model deps, `COAWST_ENV` |
-| `~/inacawo-src` | [devmetmar/inacawo-src](https://github.com/devmetmar/inacawo-src) | model build (this repo) |
-| `~/inacawo-iht` | [devmetmar/inacawo-iht](https://github.com/devmetmar/inacawo-iht) | hindcast working directory |
+| `~/inacawo-deps` (+ `~/apps`) | [devmetmar/inacawo-deps](https://github.com/devmetmar/inacawo-deps) | libraries, `hindcast` conda env, LiveOcean, `COAWST_ENV` |
+| `~/inacawo-src` | [devmetmar/inacawo-src](https://github.com/devmetmar/inacawo-src) | build scripts and headers only (this repo); you compile `binaries/{ramp_tides,no_ramp_tides}/coawstM` |
+| `~/inacawo-iht` | [devmetmar/inacawo-iht](https://github.com/devmetmar/inacawo-iht) | hindcast working directory (preprocess / run / postprocess) |
 
 ## Layout
 
@@ -47,17 +47,18 @@ source tarball.
 
 ## Quick start (participants)
 
-Prerequisite: [inacawo-deps](https://github.com/devmetmar/inacawo-deps)
-installed, including the COAWST model deps in `~/apps`
-(`bash ~/inacawo-deps/install_hindcast_env.bash`, or `--only-coawst-deps`).
+This is step 3 of the shared setup. Step 2 is
+`bash ~/inacawo-deps/install_hindcast_env.bash` (COAWST libraries in `~/apps`).
+Do not `conda activate hindcast` for this build: `build_coawst.bash` sources
+`inacawo-deps/env` and `COAWST_ENV` itself. After the binaries exist, daily
+work is `source ~/inacawo-iht/setup_env.bash`.
 
 ```bash
-cd $HOME
-git clone https://github.com/devmetmar/inacawo-src.git
-cd inacawo-src
-
-bash build_coawst.bash --sbatch          # 2 jobs (one per variant), 1 node / 96 cores each
-squeue -u $USER                          # wait for compile_cawo_ramp_tides / _no_ramp_tides
+cd $HOME/inacawo-src
+# IHT accounts: --partition DEV1. Omit it only if your account is allowed
+# on HDCAST; otherwise the wrapper selects DEV1 itself.
+bash build_coawst.bash --sbatch --partition DEV1   # 2 jobs, 1 node x 96 cores each
+squeue -u $USER                                    # compile_cawo_ramp_tides / _no_ramp_tides
 tail -f logs/compile_cawo_*_<jobid>.out
 
 ls -la binaries/*/coawstM
@@ -81,18 +82,18 @@ Each job (about 30 minutes, the two run in parallel):
 ```bash
 bash build_coawst.bash --sbatch --variant no_ramp_tides   # one variant only
 bash build_coawst.bash --sbatch --time 02:00:00           # longer SLURM limit
-bash build_coawst.bash --sbatch --partition OTHER         # other partition
+bash build_coawst.bash --sbatch --partition DEV1          # IHT accounts (also the auto fallback)
 bash build_coawst.bash --force-extract --sbatch           # fresh source trees
 bash build_coawst.bash -j 16                              # run in current shell/job (sequential)
 bash build_coawst.bash --help
 ```
 
 Each `--sbatch` job uses `--nodes=1 --ntasks-per-node=96 --exclusive`,
-default time limit `01:00:00`. Partition defaults to **auto**: `HDCAST` if
-your Slurm account is in that partition’s `AllowAccounts`, otherwise `DEV1`
-(avoids stuck `PENDING (PartitionConfig)`). Override with `--partition NAME`
-or `IHT_SLURM_PARTITION`. `make -j` defaults to `$SLURM_NTASKS` (96); WRF's
-own build is capped at `-j 20`.
+default time limit `01:00:00`. IHT accounts pass `--partition DEV1` (or
+`IHT_SLURM_PARTITION=DEV1`). If you omit it, the job selects `HDCAST` only
+when your Slurm account is in that partition’s `AllowAccounts`; otherwise
+`DEV1` (so the job does not sit in `PENDING (PartitionConfig)`). `make -j`
+defaults to `$SLURM_NTASKS` (96); WRF's own build is capped at `-j 20`.
 
 ### Why it takes ~30 minutes, and why more nodes don't help
 
