@@ -264,6 +264,14 @@ prepare_tree() {
   if grep -q "@INACAWO_DEPS_PREFIX@" "${tree}/WRF/configure.wrf"; then
     sed -i "s|@INACAWO_DEPS_PREFIX@|${DEPS_PREFIX}|g" "${tree}/WRF/configure.wrf"
   fi
+  # ROMS parses makefile by writing then including this file. The upstream
+  # path is $HOME/make_macros.mk, so two variants compiling at once corrupt it.
+  # Keep the copy inside this tree; make deletes it again via rm_macros.
+  if grep -q '^MAKE_MACROS :=' "${tree}/makefile" \
+     && ! grep -q '^MAKE_MACROS := $(CURDIR)/make_macros.mk$' "${tree}/makefile"; then
+    sed -i 's|^MAKE_MACROS := .*|MAKE_MACROS := $(CURDIR)/make_macros.mk|' "${tree}/makefile"
+    echo "    make_macros.mk -> ${tree}/make_macros.mk (not \$HOME)"
+  fi
 }
 
 # ---- build one variant ----

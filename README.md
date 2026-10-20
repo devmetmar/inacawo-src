@@ -132,6 +132,7 @@ The wrapper copies the selected header to
 - `build failed`: read `logs/build_<variant>_<timestamp>.log`. The wrapper prints its last 30 lines.
 - Job hits the time limit: resubmit with `--time 02:00:00`.
 - Corrupted or partial tree: rebuild with `--force-extract`.
+- Parallel builds must not share `$HOME/make_macros.mk`. ROMS writes that file and includes it while `make` is starting. `build_coawst.bash` points it at `coawst_<variant>/make_macros.mk` instead, so the two jobs keep their own copy.
 
 ## Maintainer: refresh the source tarball (as `cawohdcst_ft2`)
 
